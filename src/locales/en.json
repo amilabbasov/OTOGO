@@ -1,0 +1,36 @@
+{
+    "common": {
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "back": "Back",
+      "next": "Next",
+      "submit": "Submit"
+    },
+    "auth": {
+      "login": "Login",
+      "register": "Register",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot Password?",
+      "dontHaveAccount": "Don't have an account?",
+      "alreadyHaveAccount": "Already have an account?",
+      "signUp": "Sign Up",
+      "signIn": "Sign In"
+    },
+    "home": {
+      "title": "Home",
+      "welcome": "Welcome",
+      "recentActivity": "Recent Activity"
+    },
+    "profile": {
+      "title": "Profile",
+      "personalInfo": "Personal Information",
+      "settings": "Settings",
+      "logout": "Logout"
+    }
+  }

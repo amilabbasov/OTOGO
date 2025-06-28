@@ -1,0 +1,36 @@
+{
+    "common": {
+      "loading": "Yüklənir...",
+      "error": "Xəta",
+      "success": "Uğurlu",
+      "cancel": "Ləğv et",
+      "save": "Yadda saxla",
+      "delete": "Sil",
+      "edit": "Redaktə et",
+      "back": "Geri",
+      "next": "Növbəti",
+      "submit": "Təsdiq et"
+    },
+    "auth": {
+      "login": "Giriş",
+      "register": "Qeydiyyat",
+      "email": "E-poçt",
+      "password": "Şifrə",
+      "forgotPassword": "Şifrəni unutmusunuz?",
+      "dontHaveAccount": "Hesabınız yoxdur?",
+      "alreadyHaveAccount": "Artıq hesabınız var?",
+      "signUp": "Qeydiyyatdan keç",
+      "signIn": "Daxil ol"
+    },
+    "home": {
+      "title": "Ana səhifə",
+      "welcome": "Xoş gəlmisiniz",
+      "recentActivity": "Son fəaliyyət"
+    },
+    "profile": {
+      "title": "Profil",
+      "personalInfo": "Şəxsi məlumat",
+      "settings": "Parametrlər",
+      "logout": "Çıxış"
+    }
+  }

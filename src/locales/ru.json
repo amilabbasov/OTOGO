@@ -1,0 +1,36 @@
+{
+    "common": {
+      "loading": "Загрузка...",
+      "error": "Ошибка",
+      "success": "Успешно",
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "delete": "Удалить",
+      "edit": "Редактировать",
+      "back": "Назад",
+      "next": "Далее",
+      "submit": "Отправить"
+    },
+    "auth": {
+      "login": "Вход",
+      "register": "Регистрация",
+      "email": "Электронная почта",
+      "password": "Пароль",
+      "forgotPassword": "Забыли пароль?",
+      "dontHaveAccount": "Нет аккаунта?",
+      "alreadyHaveAccount": "Уже есть аккаунт?",
+      "signUp": "Зарегистрироваться",
+      "signIn": "Войти"
+    },
+    "home": {
+      "title": "Главная",
+      "welcome": "Добро пожаловать",
+      "recentActivity": "Последняя активность"
+    },
+    "profile": {
+      "title": "Профиль",
+      "personalInfo": "Личная информация",
+      "settings": "Настройки",
+      "logout": "Выйти"
+    }
+  }
