@@ -1,21 +1,46 @@
 import React from 'react';
-import { Image, ImageProps } from 'react-native';
+import {Insets, Pressable, StyleProp, ViewStyle} from 'react-native';
+import {SvgProps} from 'react-native-svg';
 
-interface SvgImageProps extends Omit<ImageProps, 'source'> {
+export interface SvgImageProps extends SvgProps {
   source: any;
-  width?: number;
-  height?: number;
+  isPressable?: boolean;
+  onPress?: () => void;
+  pressableStyle?: StyleProp<ViewStyle>;
+  pressableHitSlop?: null | Insets | number | undefined;
 }
 
-const SvgImage: React.FC<SvgImageProps> = ({ source, width, height, style, ...props }) => {
-  return (
-    <Image
-      source={source}
-      style={[{ width, height }, style]}
-      resizeMode="contain"
-      {...props}
-    />
-  );
-};
+export const SvgImage: React.FC<SvgImageProps> = ({
+  source,
+  children,
+  isPressable,
+  pressableHitSlop,
+  pressableStyle,
+  onPress,
+  ...props
+}) => {
+  if (!source?.default) {
+    return null;
+  }
 
-export default SvgImage;
+  if (props.width) {
+    props.width = Number(props.width);
+  }
+
+  if (props.height) {
+    props.height = Number(props.height);
+  }
+
+  if (isPressable) {
+    return (
+      <Pressable
+        hitSlop={pressableHitSlop}
+        onPress={onPress}
+        style={pressableStyle}>
+        {React.createElement(source.default, props, children)}
+      </Pressable>
+    );
+  }
+
+  return React.createElement(source.default, props, children);
+};

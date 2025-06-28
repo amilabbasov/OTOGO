@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAuthStore } from '@stores/auth/authStore';
+import { useAuthStore } from '../../../stores/auth/authStore';
 
 const UserTypeSelectionScreen = () => {
   const navigation = useNavigation();
