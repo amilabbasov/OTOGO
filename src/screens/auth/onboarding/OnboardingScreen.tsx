@@ -17,10 +17,6 @@ const OnboardingScreen = ({ navigation }: any) => {
                 <View style={styles.dot} />
             </View>
 
-            <TouchableOpacity style={styles.skip} onPress={() => navigation.replace('Home')}>
-                <Text style={styles.skipText}>Skip</Text>
-            </TouchableOpacity>
-
             <View style={styles.phoneMockup}>
                 <Image 
                     source={require('../../../assets/images/onboarding/mockup.png')} 
@@ -73,15 +69,6 @@ const styles = StyleSheet.create({
     container: { 
         flex: 1, 
         backgroundColor: '#F8FAF9',
-    },
-    skip: { 
-        position: 'absolute', 
-        right: 24,
-        marginTop: 70,
-    },
-    skipText: { 
-        color: '#090909', 
-        fontSize: 16,
     },
     phoneMockup: {
         marginTop: 80,
