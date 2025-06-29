@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../../stores/auth/authStore';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
-const CARD_ACTIVE_COLOR = '#015656';
-const CARD_INACTIVE_COLOR = '#e5e7eb';
+const CARD_ACTIVE_COLOR = '#22C55E';
+const CARD_INACTIVE_COLOR = '#E5E7EB';
+
+const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 
 const UserTypeCard = ({ icon, title, description, selected, onPress }: any) => {
   const scale = useSharedValue(selected ? 1.05 : 1);
@@ -41,13 +43,80 @@ const UserTypeSelectionScreen = () => {
   const { setUserType } = useAuthStore();
   const [selected, setSelected] = useState<'customer' | 'provider' | null>(null);
 
+  // Animation values
+  const providerScale = useSharedValue(1);
+  const driverScale = useSharedValue(1);
+  const providerRotateY = useSharedValue(0);
+  const driverRotateY = useSharedValue(0);
+  const providerRotateZ = useSharedValue(-8);
+  const driverRotateZ = useSharedValue(8);
+  const providerTranslateY = useSharedValue(0);
+  const driverTranslateY = useSharedValue(0);
+  const providerShadow = useSharedValue(8);
+  const driverShadow = useSharedValue(8);
+
+  // Press feedback
+  const onPressIn = useCallback((type: 'provider' | 'customer') => {
+    if (type === 'provider') providerScale.value = withSpring(0.97);
+    else driverScale.value = withSpring(0.97);
+  }, []);
+  const onPressOut = useCallback((type: 'provider' | 'customer') => {
+    if (type === 'provider') providerScale.value = withSpring(1);
+    else driverScale.value = withSpring(1);
+  }, []);
+
   const handleUserTypeSelection = async (userType: 'customer' | 'provider') => {
     setSelected(userType);
+    if (userType === 'provider') {
+      providerScale.value = withSpring(1.08);
+      providerRotateY.value = withSpring(180);
+      providerRotateZ.value = withSpring(0);
+      providerTranslateY.value = withSpring(-16);
+      providerShadow.value = withSpring(32);
+      driverScale.value = withSpring(0.94);
+      driverRotateY.value = withSpring(0);
+      driverRotateZ.value = withSpring(12);
+      driverTranslateY.value = withSpring(16);
+      driverShadow.value = withSpring(4);
+    } else {
+      driverScale.value = withSpring(1.08);
+      driverRotateY.value = withSpring(180);
+      driverRotateZ.value = withSpring(0);
+      driverTranslateY.value = withSpring(-16);
+      driverShadow.value = withSpring(32);
+      providerScale.value = withSpring(0.94);
+      providerRotateY.value = withSpring(0);
+      providerRotateZ.value = withSpring(-12);
+      providerTranslateY.value = withSpring(16);
+      providerShadow.value = withSpring(4);
+    }
     setTimeout(async () => {
       await setUserType(userType);
       navigation.navigate('Auth' as never);
-    }, 300);
+    }, 500);
   };
+
+  const providerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: providerScale.value },
+      { rotateY: `${providerRotateY.value}deg` },
+      { rotateZ: `${providerRotateZ.value}deg` },
+      { translateY: providerTranslateY.value },
+    ],
+    shadowRadius: providerShadow.value,
+    zIndex: selected === 'provider' ? 2 : 1,
+  }));
+
+  const driverAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: driverScale.value },
+      { rotateY: `${driverRotateY.value}deg` },
+      { rotateZ: `${driverRotateZ.value}deg` },
+      { translateY: driverTranslateY.value },
+    ],
+    shadowRadius: driverShadow.value,
+    zIndex: selected === 'customer' ? 2 : 1,
+  }));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,21 +126,33 @@ const UserTypeSelectionScreen = () => {
       </View>
       <View style={styles.content}>
         <Text style={styles.title}>Choose Your Role</Text>
-        <View style={styles.optionsContainer}>
-          <UserTypeCard
-            icon="👤"
-            title="Customer"
-            description="I want to book services and find providers"
-            selected={selected === 'customer'}
-            onPress={() => handleUserTypeSelection('customer')}
-          />
-          <UserTypeCard
-            icon="🔧"
-            title="Service Provider"
-            description="I want to provide services and earn money"
-            selected={selected === 'provider'}
+        <View style={styles.centeredCardsContainer}>
+          <AnimatedTouchable
+            style={[
+              styles.animatedCard,
+              selected === 'provider' ? styles.selectedCard : styles.unselectedCard,
+              providerAnimatedStyle,
+            ]}
+            activeOpacity={0.85}
+            onPressIn={() => onPressIn('provider')}
+            onPressOut={() => onPressOut('provider')}
             onPress={() => handleUserTypeSelection('provider')}
-          />
+          >
+            <Text style={selected === 'provider' ? styles.selectedText : styles.unselectedText}>Provider</Text>
+          </AnimatedTouchable>
+          <AnimatedTouchable
+            style={[
+              styles.animatedCard,
+              selected === 'customer' ? styles.selectedCard : styles.unselectedCard,
+              driverAnimatedStyle,
+            ]}
+            activeOpacity={0.85}
+            onPressIn={() => onPressIn('customer')}
+            onPressOut={() => onPressOut('customer')}
+            onPress={() => handleUserTypeSelection('customer')}
+          >
+            <Text style={selected === 'customer' ? styles.selectedText : styles.unselectedText}>Driver</Text>
+          </AnimatedTouchable>
         </View>
       </View>
     </SafeAreaView>
@@ -81,7 +162,7 @@ const UserTypeSelectionScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F8FA',
   },
   navigationDots: {
     flexDirection: 'row',
@@ -106,6 +187,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 24,
   },
   title: {
@@ -115,8 +197,62 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     color: '#111',
   },
-  optionsContainer: {
-    gap: 20,
+  centeredCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: -60,
+  },
+  animatedCard: {
+    width: 180,
+    height: 220,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    marginHorizontal: -30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: CARD_INACTIVE_COLOR,
+  },
+  animatedCardSelected: {
+    borderColor: CARD_ACTIVE_COLOR,
+    shadowOpacity: 0.18,
+    elevation: 16,
+  },
+  providerCard: {},
+  driverCard: {},
+  selectedCard: {
+    backgroundColor: CARD_ACTIVE_COLOR,
+    borderColor: CARD_ACTIVE_COLOR,
+  },
+  unselectedCard: {
+    backgroundColor: '#fff',
+    borderColor: CARD_ACTIVE_COLOR,
+  },
+  selectedText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 26,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  unselectedText: {
+    color: CARD_ACTIVE_COLOR,
+    fontWeight: '700',
+    fontSize: 26,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  cardText: {
+    fontWeight: '700',
+    fontSize: 26,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   optionCard: {
     backgroundColor: '#fff',
