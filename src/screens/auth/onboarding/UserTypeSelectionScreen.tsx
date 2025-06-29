@@ -1,103 +1,117 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useAuthStore } from '@stores/auth/authStore';
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
-const UserTypeSelectionScreen = () => {
-  const navigation = useNavigation();
-  const { setUserType } = useAuthStore();
+const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 
-  const handleUserTypeSelection = async (userType: 'customer' | 'provider') => {
-    // Store user type selection
-    await setUserType(userType);
-    // Navigate to auth flow
-    navigation.navigate('Auth' as never);
+const roles = [
+  { id: 'provider', label: 'Provider' },
+  { id: 'driver', label: 'Driver' },
+];
+
+const CARD_WIDTH = 160;
+const CARD_HEIGHT = 200;
+
+const UserTypeSelection = () => {
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const getSharedStyles = (roleId: string, isSelected: boolean) => {
+    const scale = useSharedValue(isSelected ? 1.1 : 1);
+    const translateY = useSharedValue(isSelected ? -20 : 0);
+    const rotate = useSharedValue(roleId === 'provider' ? -15 : 15);
+    const zIndex = isSelected ? 2 : 1;
+    const elevation = isSelected ? 12 : 4;
+
+    React.useEffect(() => {
+      scale.value = withSpring(isSelected ? 1.1 : 1);
+      translateY.value = withSpring(isSelected ? -20 : 0);
+      rotate.value = withSpring(isSelected ? 0 : (roleId === 'provider' ? -15 : 15));
+    }, [isSelected]);
+
+    const style = useAnimatedStyle(() => ({
+      transform: [
+        { scale: scale.value },
+        { translateY: translateY.value },
+        { rotate: `${rotate.value}deg` }
+      ],
+      zIndex,
+      elevation,
+    }));
+
+    return style;
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to otogo</Text>
-        <Text style={styles.subtitle}>Choose your account type</Text>
-        
-        <View style={styles.optionsContainer}>
-          <TouchableOpacity
-            style={styles.optionCard}
-            onPress={() => handleUserTypeSelection('customer')}
-          >
-            <Text style={styles.optionIcon}>👤</Text>
-            <Text style={styles.optionTitle}>Customer</Text>
-            <Text style={styles.optionDescription}>
-              I want to book services and find providers
-            </Text>
-          </TouchableOpacity>
+      <Text style={styles.title}>Choose Your Role</Text>
+      <View style={styles.cardContainer}>
+        {roles.map(role => {
+          const isSelected = selected === role.id;
+          const animatedStyle = getSharedStyles(role.id, isSelected);
 
-          <TouchableOpacity
-            style={styles.optionCard}
-            onPress={() => handleUserTypeSelection('provider')}
-          >
-            <Text style={styles.optionIcon}>🔧</Text>
-            <Text style={styles.optionTitle}>Service Provider</Text>
-            <Text style={styles.optionDescription}>
-              I want to provide services and earn money
-            </Text>
-          </TouchableOpacity>
-        </View>
+          return (
+            <AnimatedTouchable
+              key={role.id}
+              style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
+              onPress={() => setSelected(role.id)}
+              activeOpacity={1}
+            >
+              <Text style={isSelected ? styles.selectedText : styles.text}>{role.label}</Text>
+            </AnimatedTouchable>
+          );
+        })}
       </View>
     </SafeAreaView>
   );
 };
 
+export default UserTypeSelection;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flex: 1,
+    backgroundColor: '#F6F8FA',
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#015656',
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 100,
   },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 48,
-    color: '#6B7280',
+  cardContainer: {
+    flexDirection: 'row',
   },
-  optionsContainer: {
-    gap: 16,
-  },
-  optionCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
+  card: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: 20,
+    backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#e5e7eb',
+    borderColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  optionIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+  selectedCard: {
+    backgroundColor: '#22C55E',
   },
-  optionTitle: {
+  text: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 8,
-    color: '#015656',
+    color: '#22C55E',
   },
-  optionDescription: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#6B7280',
-    lineHeight: 20,
+  selectedText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
-
-export default UserTypeSelectionScreen; 

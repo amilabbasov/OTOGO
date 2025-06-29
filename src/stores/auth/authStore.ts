@@ -5,12 +5,12 @@ import { UserType, AuthUser } from '../../types/common';
 interface AuthState {
   token: string | null;
   user: AuthUser | null;
-  userType: UserType | null;
+  userType: 'customer' | 'provider' | null;
   isLoading: boolean;
   checkToken: () => Promise<void>;
   setToken: (token: string) => Promise<void>;
   setUser: (user: AuthUser) => Promise<void>;
-  setUserType: (userType: UserType) => Promise<void>;
+  setUserType: (userType: 'customer' | 'provider') => Promise<void>;
   clearAuth: () => Promise<void>;
 }
 
@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  setUserType: async (userType: UserType) => {
+  setUserType: async (userType: 'customer' | 'provider') => {
     try {
       await AsyncStorage.setItem('user_type', userType);
       set({ userType });

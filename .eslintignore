@@ -1,0 +1,6 @@
+node_modules/
+ios/
+android/
+*.min.js
+coverage/
+*.bundle.js 
