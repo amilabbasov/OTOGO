@@ -1,36 +1,15 @@
 {
-    "common": {
-      "loading": "Загрузка...",
-      "error": "Ошибка",
-      "success": "Успешно",
-      "cancel": "Отмена",
-      "save": "Сохранить",
-      "delete": "Удалить",
-      "edit": "Редактировать",
-      "back": "Назад",
-      "next": "Далее",
-      "submit": "Отправить"
-    },
-    "auth": {
-      "login": "Вход",
-      "register": "Регистрация",
-      "email": "Электронная почта",
-      "password": "Пароль",
-      "forgotPassword": "Забыли пароль?",
-      "dontHaveAccount": "Нет аккаунта?",
-      "alreadyHaveAccount": "Уже есть аккаунт?",
-      "signUp": "Зарегистрироваться",
-      "signIn": "Войти"
-    },
-    "home": {
-      "title": "Главная",
-      "welcome": "Добро пожаловать",
-      "recentActivity": "Последняя активность"
-    },
-    "profile": {
-      "title": "Профиль",
-      "personalInfo": "Личная информация",
-      "settings": "Настройки",
-      "logout": "Выйти"
-    }
-  }
+  "Select Language": "Выберите язык",
+  "Save and Continue": "Сохранить и продолжить",
+  "Continue": "Продолжить",
+  "Choose Your Role": "Выберите вашу роль",
+  "Provider": "Поставщик",
+  "Driver": "Водитель",
+  "Get Started": "Начать",
+  "OTOGO is closest to you": "OTOGO рядом с вами",
+  "Premium and prestige car hourly wash, experience the thrill at lower price.": "Премиум и престижная почасовая аренда автомобилей, испытайте острые ощущения по более низкой цене.",
+  "now": "сейчас",
+  "Mehriban": "Mehriban",
+  "I could find the closest car wash place near me on OTOGO": "Я нашел ближайшее место для мойки автомобиля рядом с вами на OTOGO",
+  "Adrian": "Adrian"
+}

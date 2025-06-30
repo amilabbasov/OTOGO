@@ -1,36 +1,15 @@
 {
-    "common": {
-      "loading": "Loading...",
-      "error": "Error",
-      "success": "Success",
-      "cancel": "Cancel",
-      "save": "Save",
-      "delete": "Delete",
-      "edit": "Edit",
-      "back": "Back",
-      "next": "Next",
-      "submit": "Submit"
-    },
-    "auth": {
-      "login": "Login",
-      "register": "Register",
-      "email": "Email",
-      "password": "Password",
-      "forgotPassword": "Forgot Password?",
-      "dontHaveAccount": "Don't have an account?",
-      "alreadyHaveAccount": "Already have an account?",
-      "signUp": "Sign Up",
-      "signIn": "Sign In"
-    },
-    "home": {
-      "title": "Home",
-      "welcome": "Welcome",
-      "recentActivity": "Recent Activity"
-    },
-    "profile": {
-      "title": "Profile",
-      "personalInfo": "Personal Information",
-      "settings": "Settings",
-      "logout": "Logout"
-    }
-  }
+  "Select Language": "Select Language",
+  "Save and Continue": "Save and Continue",
+  "Continue": "Continue",
+  "Choose Your Role": "Choose Your Role",
+  "Provider": "Provider",
+  "Driver": "Driver",
+  "Get Started": "Get Started",
+  "OTOGO is closest to you": "OTOGO is closest to you",
+  "Premium and prestige car hourly wash, experience the thrill at lower price.": "Premium and prestige car hourly wash, experience the thrill at lower price.",
+  "Mehriban": "Mehriban",
+  "I could find the closest car wash place near me on OTOGO": "I could find the closest car wash place near me on OTOGO",
+  "now": "now",
+  "Adrian": "Adrian"
+}

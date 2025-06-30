@@ -8,15 +8,12 @@ import {
     Image,
 } from 'react-native';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
+import { useTranslation } from 'react-i18next';
 
-const OnboardingScreen = ({ navigation }: any) => {
+const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
+    const { t } = useTranslation();
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.navigationDots}>
-                <View style={[styles.dot, styles.activeDot]} />
-                <View style={styles.dot} />
-            </View>
-
             <View style={styles.phoneMockup}>
                 <Image 
                     source={require('../../../assets/images/onboarding/mockup.png')} 
@@ -25,40 +22,40 @@ const OnboardingScreen = ({ navigation }: any) => {
                 />
                 <View style={styles.notificationsContainer}>
                     <View style={styles.notification}>
-                        <SvgImage source={require('../../../assets/svg/onboarding/bitmoji-1.svg')} width={40} height={40} style={styles.avatar} />
+                        <SvgImage source={require('../../../assets/svg/onboarding/bitmoji-1.svg')} width={36} height={36} style={styles.avatar} />
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.notifName}>Mehriban</Text>
+                            <Text style={styles.notifName}>{t('Mehriban')}</Text>
                             <Text style={styles.notifMsg}>
-                                OTOGO sayəsində yaxınlıqda mənə uyğun avto yuma məntəqəsini tapa bildim
+                                {t('I could find the closest car wash place near me on OTOGO')}
                             </Text>
                         </View>
-                        <Text style={styles.notifTime}>now</Text>
+                        <Text style={styles.notifTime}>{t('now')}</Text>
                     </View>
                     <View style={styles.notification}>
-                        <SvgImage source={require('../../../assets/svg/onboarding/bitmoji-2.svg')} width={32} height={32} style={styles.avatar} />
+                        <SvgImage source={require('../../../assets/svg/onboarding/bitmoji-2.svg')} width={36} height={36} style={styles.avatar} />
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.notifName}>Adrian</Text>
+                            <Text style={styles.notifName}>{t('Adrian')}</Text>
                             <Text style={styles.notifMsg}>
-                                OTOGO sayəsində yaxınlıqda mənə uyğun avto yuma məntəqəsini tapa bildim
+                                {t('I could find the closest car wash place near me on OTOGO')}
                             </Text>
                         </View>
-                        <Text style={styles.notifTime}>now</Text>
+                        <Text style={styles.notifTime}>{t('now')}</Text>
                     </View>
                 </View>
             </View>
 
             <View style={styles.textBlock}>
-                <Text style={styles.headline}>OTOGO sənə ən yaxın</Text>
+                <Text style={styles.headline}>{t('OTOGO is closest to you')}</Text>
                 <Text style={styles.subtitle}>
-                    Premium and prestige car hourly rental, experience the thrill at lower price.
+                    {t('Premium and prestige car hourly wash, experience the thrill at lower price.')}
                 </Text>
             </View>
 
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => navigation.replace('UserTypeSelection')}
+                onPress={onNext}
             >
-                <Text style={styles.buttonText}>Get Started</Text>
+                <Text style={styles.buttonText}>{t('Continue')}</Text>
                 <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
             </TouchableOpacity>
         </SafeAreaView>
@@ -95,7 +92,6 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     avatar: {
-        fontSize: 32,
         marginRight: 10
     },
     notifName: {
@@ -117,7 +113,8 @@ const styles = StyleSheet.create({
     },
     textBlock: { 
         marginTop: 120, 
-        paddingHorizontal: 24 
+        paddingHorizontal: 24,
+        gap: 80
     },
     headline: { 
         fontSize: 36, 
@@ -128,7 +125,6 @@ const styles = StyleSheet.create({
         color: '#888', 
         fontSize: 14,
         fontWeight: '400',
-        marginTop: 100,
     },
     button: {
         flexDirection: 'row',
@@ -163,29 +159,6 @@ const styles = StyleSheet.create({
         bottom: 0,
         alignItems: 'center',
         gap: 10,
-    },
-    navigationDots: {
-        position: 'absolute',
-        top: 70,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 10,
-    },
-    dot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#E5E7EB',
-        marginHorizontal: 4,
-        opacity: 0.6,
-    },
-    activeDot: {
-        backgroundColor: '#111',
-        opacity: 1,
-        transform: [{ scale: 1.2 }],
     },
 });
 

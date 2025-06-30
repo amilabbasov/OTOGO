@@ -5,6 +5,8 @@ import Reanimated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
+import { SvgImage } from '../../../components/svgImage/SvgImage';
+import { useTranslation } from 'react-i18next';
 
 const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 
@@ -18,7 +20,7 @@ const CARD_HEIGHT = 200;
 
 const UserTypeSelection = () => {
   const [selected, setSelected] = useState<string | null>(null);
-
+  const { t } = useTranslation();
   const getSharedStyles = (roleId: string, isSelected: boolean) => {
     const scale = useSharedValue(isSelected ? 1.1 : 1);
     const translateY = useSharedValue(isSelected ? -20 : 0);
@@ -47,24 +49,34 @@ const UserTypeSelection = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Choose Your Role</Text>
-      <View style={styles.cardContainer}>
-        {roles.map(role => {
-          const isSelected = selected === role.id;
-          const animatedStyle = getSharedStyles(role.id, isSelected);
+      <View style={styles.centeredGroup}>
+        <Text style={styles.title}>{t('Choose Your Role')}</Text>
+        <View style={styles.cardContainer}>
+          {roles.map(role => {
+            const isSelected = selected === role.id;
+            const animatedStyle = getSharedStyles(role.id, isSelected);
 
-          return (
-            <AnimatedTouchable
-              key={role.id}
-              style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
-              onPress={() => setSelected(role.id)}
-              activeOpacity={1}
-            >
-              <Text style={isSelected ? styles.selectedText : styles.text}>{role.label}</Text>
-            </AnimatedTouchable>
-          );
-        })}
+            return (
+              <AnimatedTouchable
+                key={role.id}
+                style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
+                onPress={() => setSelected(role.id)}
+                activeOpacity={1}
+              >
+                <Text style={isSelected ? styles.selectedText : styles.text}>{t(role.label)}</Text>
+              </AnimatedTouchable>
+            );
+          })}
+        </View>
       </View>
+      <TouchableOpacity
+        style={[styles.button, !selected && { opacity: 0.5 }]}
+        disabled={!selected}
+        onPress={() => console.log('Selected role:', selected)}
+      >
+        <Text style={styles.buttonText}>{t('Get Started')}</Text>
+        <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -78,8 +90,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  centeredGroup: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 36,
+    lineHeight: 48,
     fontWeight: '700',
     marginBottom: 100,
   },
@@ -113,5 +131,25 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#fff',
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111',
+    borderRadius: 16,
+    paddingVertical: 15,
+    justifyContent: 'center',
+    paddingHorizontal: '35%',
+    marginTop: 'auto',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  buttonArrow: {
+    marginLeft: 8,
   },
 });
