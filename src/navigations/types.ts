@@ -1,21 +1,17 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Routes } from './routes';
+import { NavigatorScreenParams } from '@react-navigation/native';
 
-// Navigation param lists using the single Routes enum
 export type RootStackParamList = {
-  [Routes.onboarding]: undefined;
-  [Routes.auth]: undefined;
-  [Routes.main]: undefined;
-};
-
-export type OnboardingStackParamList = {
-  [Routes.changeLanguage]: undefined;
-  [Routes.onboardingPager]: undefined;
+  [Routes.auth]: NavigatorScreenParams<AuthStackParamList>;
+  [Routes.main]: NavigatorScreenParams<MainStackParamList>;
 };
 
 export type AuthStackParamList = {
+  [Routes.changeLanguage]: undefined;
+  [Routes.onboardingPager]: undefined;
   [Routes.login]: undefined;
-  [Routes.register]: undefined;
+  [Routes.register]: { userType: string | null };
   [Routes.forgotPassword]: undefined;
   [Routes.otp]: undefined;
 };
@@ -25,9 +21,8 @@ export type MainStackParamList = {
   [Routes.providerTabs]: undefined;
 };
 
-// Screen props for current navigation
-export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = 
-  NativeStackScreenProps<OnboardingStackParamList, T>;
-
 export type AuthScreenProps<T extends keyof AuthStackParamList> = 
   NativeStackScreenProps<AuthStackParamList, T>; 
+
+export type MainScreenProps<T extends keyof MainStackParamList> = 
+  NativeStackScreenProps<MainStackParamList, T>;

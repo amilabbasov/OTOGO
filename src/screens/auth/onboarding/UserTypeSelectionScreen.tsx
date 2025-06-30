@@ -7,6 +7,9 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import type { AuthScreenProps } from '../../../navigations/types';
+import { Routes } from '../../../navigations/routes';
 
 const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 
@@ -21,6 +24,8 @@ const CARD_HEIGHT = 200;
 const UserTypeSelection = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const { t } = useTranslation();
+  const navigation = useNavigation<AuthScreenProps<Routes.onboardingPager>['navigation']>();
+
   const getSharedStyles = (roleId: string, isSelected: boolean) => {
     const scale = useSharedValue(isSelected ? 1.1 : 1);
     const translateY = useSharedValue(isSelected ? -20 : 0);
@@ -71,8 +76,10 @@ const UserTypeSelection = () => {
       </View>
       <TouchableOpacity
         style={[styles.button, !selected && { opacity: 0.5 }]}
-        disabled={!selected}
-        onPress={() => console.log('Selected role:', selected)}
+          disabled={!selected}
+        onPress={() =>
+          navigation.navigate(Routes.register, { userType: selected })
+        }
       >
         <Text style={styles.buttonText}>{t('Get Started')}</Text>
         <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
@@ -139,9 +146,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 15,
     justifyContent: 'center',
-    paddingHorizontal: '35%',
+    marginHorizontal: 24,
     marginTop: 'auto',
     marginBottom: 20,
+    alignSelf: 'stretch',
   },
   buttonText: {
     color: '#fff',

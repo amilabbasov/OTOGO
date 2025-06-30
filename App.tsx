@@ -7,15 +7,15 @@
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import OnboardingNavigator from './src/navigations/OnboardingNavigator';
 import { StatusBar } from 'react-native';
 import './src/locales/i18n';
+import { AuthRouter } from './src/navigations/Auth.Router';
 
 function App() {
   return (
     <NavigationContainer>
       <StatusBar barStyle="dark-content" />
-      <OnboardingNavigator />
+      <AuthRouter />
     </NavigationContainer>
   );
 }

@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { View, StyleSheet, SafeAreaView } from 'react-native';
-import type { OnboardingScreenProps } from '../../../navigations/types';
+import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import PagerView from 'react-native-pager-view';
 import OnboardingScreen from './OnboardingScreen';
-import UserTypeSelectionScreen from './UserTypeSelectionScreen';
+import UserTypeSelection from './UserTypeSelectionScreen'; 
 
-type Props = OnboardingScreenProps<Routes.onboardingPager>;
+type Props = AuthScreenProps<Routes.onboardingPager>;
 
 const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
   const pagerRef = useRef<PagerView>(null);
@@ -35,7 +35,7 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
           <OnboardingScreen onNext={handleNext} />
         </View>
         <View key="userType">
-          <UserTypeSelectionScreen />
+          <UserTypeSelection />
         </View>
       </PagerView>
     </SafeAreaView>
@@ -75,4 +75,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OnboardingPagerScreen; 
+export default OnboardingPagerScreen;

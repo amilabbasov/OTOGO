@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import type { OnboardingScreenProps } from '../../../navigations/types';
+import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import i18n from '../../../locales/i18n';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
 
-type Props = OnboardingScreenProps<Routes.changeLanguage>;
+type Props = AuthScreenProps<Routes.changeLanguage>;
 
 const languages = [
   { code: 'az', label: 'Azərbaycan dili' },
