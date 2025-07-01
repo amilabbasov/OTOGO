@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react'; // Import useRef
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
-  ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
@@ -33,6 +32,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showRePassword, setShowRePassword] = useState(false);
 
+  const numberInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+  const rePasswordInputRef = useRef<TextInput>(null);
+
   const handleSignUp = () => {
     if (!number || !password || !rePassword) {
       Alert.alert(t('Error'), t('Please fill in all fields.'));
@@ -45,31 +48,19 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
 
     console.log('Registering with:', { number, password, userType });
 
-    const rootNavigation = navigation.getParent();
-    rootNavigation?.reset({
-      index: 0,
-      routes: [
-        {
-          name: Routes.main,
-          params: { screen: userType === 'provider' ? Routes.providerTabs : Routes.customerTabs },
-        },
-      ],
-    });
+    navigation.navigate(Routes.otp);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAvoidingView
-          style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+        <View style={styles.container}>
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoidingView}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
           >
-            <View style={styles.container}>
+            <View style={styles.innerContent}>
               <View style={styles.header}>
                 <Text style={styles.title}>{t('Sign Up')}</Text>
                 <Text style={styles.subtitle}>{t('Create your new account')}</Text>
@@ -88,107 +79,118 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('Number')}</Text>
-                <View style={styles.inputContainer}>
-                  <SvgImage
-                    source={require('../../../assets/svg/auth/phone-icon.svg')}
-                    width={20}
-                    height={20}
-                    color="#666"
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder={t('Enter your number')}
-                    keyboardType="phone-pad"
-                    value={number}
-                    onChangeText={setNumber}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('Password')}</Text>
-                <View style={styles.inputContainer}>
-                  <SvgImage
-                    source={require('../../../assets/svg/auth/lock-icon.svg')}
-                    width={20}
-                    height={20}
-                    color="#666"
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder={t('Enter your password')}
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('Number')}</Text>
+                  <View style={styles.inputContainer}>
                     <SvgImage
-                      source={
-                        showPassword
-                          ? require('../../../assets/svg/auth/eye-closed-icon.svg')
-                          : require('../../../assets/svg/auth/eye-closed-icon.svg')
-                      }
+                      source={require('../../../assets/svg/auth/phone-icon.svg')}
                       width={20}
                       height={20}
                       color="#666"
+                      style={styles.inputIcon}
                     />
-                  </TouchableOpacity>
+                    <TextInput
+                      ref={numberInputRef}
+                      style={styles.input}
+                      placeholder={t('Enter your number')}
+                      keyboardType="phone-pad"
+                      value={number}
+                      onChangeText={setNumber}
+                      returnKeyType="next"
+                      onSubmitEditing={() => passwordInputRef.current?.focus()}
+                    />
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('Re-Password')}</Text>
-                <View style={styles.inputContainer}>
-                  <SvgImage
-                    source={require('../../../assets/svg/auth/lock-icon.svg')}
-                    width={20}
-                    height={20}
-                    color="#666"
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder={t('Enter your password')}
-                    secureTextEntry={!showRePassword}
-                    value={rePassword}
-                    onChangeText={setRePassword}
-                  />
-                  <TouchableOpacity onPress={() => setShowRePassword(!showRePassword)} style={styles.eyeIcon}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('Password')}</Text>
+                  <View style={styles.inputContainer}>
                     <SvgImage
-                      source={
-                        showRePassword
-                          ? require('../../../assets/svg/auth/eye-closed-icon.svg')
-                          : require('../../../assets/svg/auth/eye-closed-icon.svg')
-                      }
+                      source={require('../../../assets/svg/auth/lock-icon.svg')}
                       width={20}
                       height={20}
                       color="#666"
+                      style={styles.inputIcon}
                     />
-                  </TouchableOpacity>
+                    <TextInput
+                      ref={passwordInputRef}
+                      style={styles.input}
+                      placeholder={t('Enter your password')}
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                      returnKeyType="next"
+                      onSubmitEditing={() => rePasswordInputRef.current?.focus()}
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                      <SvgImage
+                        source={
+                          showPassword
+                            ? require('../../../assets/svg/auth/eye-open-icon.svg')
+                            : require('../../../assets/svg/auth/eye-closed-icon.svg')
+                        }
+                        width={20}
+                        height={20}
+                        color="#666"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('Re-Password')}</Text>
+                  <View style={styles.inputContainer}>
+                    <SvgImage
+                      source={require('../../../assets/svg/auth/lock-icon.svg')}
+                      width={20}
+                      height={20}
+                      color="#666"
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      ref={rePasswordInputRef}
+                      style={styles.input}
+                      placeholder={t('Enter your password')}
+                      secureTextEntry={!showRePassword}
+                      value={rePassword}
+                      onChangeText={setRePassword}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSignUp}
+                    />
+                    <TouchableOpacity onPress={() => setShowRePassword(!showRePassword)} style={styles.eyeIcon}>
+                      <SvgImage
+                        source={
+                          showRePassword
+                            ? require('../../../assets/svg/auth/eye-open-icon.svg')
+                            : require('../../../assets/svg/auth/eye-closed-icon.svg')
+                        }
+                        width={20}
+                        height={20}
+                        color="#666"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
+                  <Text style={styles.signUpButtonText}>{t('Sign Up')}</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.termsText}>
+                  {t('By selecting Sign Up, I agree to ')}
+                  <Text style={styles.linkText} onPress={() => Alert.alert(t('Terms of Service'))}>
+                    {t('Terms of Service')}
+                  </Text>
+                  {t(' and ')}
+                  <Text style={styles.linkText} onPress={() => Alert.alert(t('Privacy Policy'))}>
+                    {t('Privacy Policy')}
+                  </Text>
+                </Text>
               </View>
-
-              <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-                <Text style={styles.signUpButtonText}>{t('Sign Up')}</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.termsText}>
-                {t('By selecting Sign Up, I agree to ')}
-                <Text style={styles.linkText} onPress={() => Alert.alert(t('Terms of Service'))}>
-                  {t('Terms of Service')}
-                </Text>
-                {t(' and ')}
-                <Text style={styles.linkText} onPress={() => Alert.alert(t('Privacy Policy'))}>
-                  {t('Privacy Policy')}
-                </Text>
-              </Text>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );
@@ -199,16 +201,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
   container: {
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  innerContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   header: {
-    marginBottom: 120,
+    marginBottom: 0,
   },
   title: {
     fontSize: 30,
@@ -278,7 +284,7 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
   },
   signUpButton: {
-    backgroundColor: '#36F88D',
+    backgroundColor: '#D5FF5F',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
@@ -292,7 +298,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   signUpButtonText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 14,
     fontWeight: '500',
   },
