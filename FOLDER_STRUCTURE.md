@@ -4,7 +4,7 @@
 otogo is a service marketplace app connecting customers with service providers. The app has two main user types with different interfaces and functionalities.
 
 ## User Types
-- **Customer**: Books services, finds providers, manages bookings
+- **Driver**: Books services, finds providers, manages bookings
 - **Provider**: Offers services, manages bookings, tracks earnings
 
 ## Folder Structure
