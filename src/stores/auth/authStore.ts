@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserType, AuthUser } from '../../types/common';
-import axios from 'axios';
+import axiosInstance from '../../services/axiosInstance';
 
 interface AuthState {
   token: string | null;
@@ -76,8 +76,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signup: async (phone: string, password: string, repeatPassword: string, userType: 'driver' | 'provider') => {
     set({ isLoading: true });
     try {
-      const endpoint = userType === 'driver' ? '/drivers' : '/providers';
-      const response = await axios.post(endpoint, {
+      const endpoint = userType === 'driver' ? 'api/drivers' : 'api/providers';
+      const response = await axiosInstance.post(endpoint, {
         phone,
         password,
         repeatPassword,
