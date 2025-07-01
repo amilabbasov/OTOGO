@@ -35,4 +35,12 @@ export class LocalStorage {
       console.error('Error clearing data:', error);
     }
   }
+
+  static async getLanguage(): Promise<string | null> {
+    return await this.getItem('language');
+  }
+
+  static async setLanguage(language: string): Promise<void> {
+    await this.setItem('language', language);
+  }
 }

@@ -4,11 +4,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { MainRouter } from './Main.Router';
 import { AuthRouter } from './Auth.Router';
-import OnboardingNavigator from './OnboardingNavigator';
 import { defaultScreenOptions } from '../configs/navigationConfig';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../locales/i18n';
 import { useAuthStore } from '../stores/auth/authStore';
+import { Routes } from './routes';
 
 const RootStack = createNativeStackNavigator();
 
@@ -34,9 +34,9 @@ const Router = () => {
 
   const getInitialRoute = () => {
     if (!token) {
-      return 'Onboarding';
+      return Routes.onboarding;
     }
-    return 'Main';
+    return Routes.main;
   };
 
   return (
@@ -46,9 +46,8 @@ const Router = () => {
           screenOptions={defaultScreenOptions}
           initialRouteName={getInitialRoute()}
         >
-          <RootStack.Screen name="Onboarding" component={OnboardingNavigator} />
-          <RootStack.Screen name="Auth" component={AuthRouter} />
-          <RootStack.Screen name="Main" component={MainRouter} />
+          <RootStack.Screen name={Routes.auth} component={AuthRouter} />
+          <RootStack.Screen name={Routes.main} component={MainRouter} />
         </RootStack.Navigator>
       </NavigationContainer>
     </I18nextProvider>

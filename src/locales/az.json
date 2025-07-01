@@ -1,36 +1,15 @@
 {
-    "common": {
-      "loading": "Yüklənir...",
-      "error": "Xəta",
-      "success": "Uğurlu",
-      "cancel": "Ləğv et",
-      "save": "Yadda saxla",
-      "delete": "Sil",
-      "edit": "Redaktə et",
-      "back": "Geri",
-      "next": "Növbəti",
-      "submit": "Təsdiq et"
-    },
-    "auth": {
-      "login": "Giriş",
-      "register": "Qeydiyyat",
-      "email": "E-poçt",
-      "password": "Şifrə",
-      "forgotPassword": "Şifrəni unutmusunuz?",
-      "dontHaveAccount": "Hesabınız yoxdur?",
-      "alreadyHaveAccount": "Artıq hesabınız var?",
-      "signUp": "Qeydiyyatdan keç",
-      "signIn": "Daxil ol"
-    },
-    "home": {
-      "title": "Ana səhifə",
-      "welcome": "Xoş gəlmisiniz",
-      "recentActivity": "Son fəaliyyət"
-    },
-    "profile": {
-      "title": "Profil",
-      "personalInfo": "Şəxsi məlumat",
-      "settings": "Parametrlər",
-      "logout": "Çıxış"
-    }
-  }
+  "Select Language": "Dil Seçin",
+  "Save and Continue": "Yadda Saxla və Davam Et",
+  "Continue": "Davam Et",
+  "Choose Your Role": "Rolunuzu Seçin",
+  "Provider": "Təminatçı",
+  "Driver": "Sürücü",
+  "Get Started": "Başla",
+  "OTOGO is closest to you": "OTOGO sənə ən yaxın",
+  "Premium and prestige car hourly wash, experience the thrill at lower price.": "Premium və prestijli avtomobil yuma, daha aşağı qiymətə həyəcanı yaşayın.",
+  "now": "indi",
+  "Mehriban": "Mehriban",
+  "I could find the closest car wash place near me on OTOGO": "OTOGO sayəsində yaxınlıqda mənə uyğun avto yuma məntəqəsini tapa bildim",
+  "Adrian": "Adrian"
+}
