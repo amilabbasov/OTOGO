@@ -12,7 +12,7 @@ export const MainRouter = () => {
 
   return (
     <MainStack.Navigator screenOptions={{ headerShown: false }}>
-      {userType === 'customer' ? (
+      {userType === 'driver' ? (
         <MainStack.Screen name={Routes.customerTabs} component={CustomerNavigator} />
       ) : (
         <MainStack.Screen name={Routes.providerTabs} component={ProviderNavigator} />

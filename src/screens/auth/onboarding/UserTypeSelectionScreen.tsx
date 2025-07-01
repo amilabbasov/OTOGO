@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#22C55E',
+    borderColor: '#D5FF5F',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -127,17 +127,17 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   selectedCard: {
-    backgroundColor: '#22C55E',
+    backgroundColor: '#D5FF5F',
   },
   text: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#22C55E',
+    color: '#D5FF5F',
   },
   selectedText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#fff',
+    color: '#000',
   },
   button: {
     flexDirection: 'row',

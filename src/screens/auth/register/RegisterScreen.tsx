@@ -17,6 +17,7 @@ import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../../stores/auth/authStore';
 
 type RegisterScreenProps = AuthScreenProps<Routes.register>;
 
@@ -25,7 +26,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const navigation = useNavigation<RegisterScreenProps['navigation']>();
   const route = useRoute<RegisterScreenProps['route']>();
   const { userType } = route.params;
-
+  const { signup } = useAuthStore();
   const [number, setNumber] = useState('');
   const [password, setPassword] = useState('');
   const [rePassword, setRePassword] = useState('');
@@ -36,7 +37,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const passwordInputRef = useRef<TextInput>(null);
   const rePasswordInputRef = useRef<TextInput>(null);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!number || !password || !rePassword) {
       Alert.alert(t('Error'), t('Please fill in all fields.'));
       return;
@@ -46,9 +47,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
       return;
     }
 
-    console.log('Registering with:', { number, password, userType });
+    const result = await signup(number, password, rePassword, userType as 'driver' | 'provider');
 
-    navigation.navigate(Routes.otp);
+    if (result.success) {
+      navigation.navigate(Routes.otp);
+    } else {
+      Alert.alert(t('Error'), result.message || t('Registration failed'));
+    }
   };
 
   return (

@@ -1,15 +1,15 @@
-export interface Customer {
+export interface Driver {
   id: string;
   name: string;
   email: string;
   phone: string;
   avatar?: string;
-  preferences: CustomerPreferences;
+  preferences: DriverPreferences;
   bookings: Booking[];
-  favorites: string[]; // Provider IDs
+  favorites: string[];
 }
 
-export interface CustomerPreferences {
+export interface DriverPreferences {
   notifications: boolean;
   language: string;
   theme: 'light' | 'dark';

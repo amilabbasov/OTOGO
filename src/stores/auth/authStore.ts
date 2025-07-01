@@ -1,17 +1,19 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserType, AuthUser } from '../../types/common';
+import axios from 'axios';
 
 interface AuthState {
   token: string | null;
   user: AuthUser | null;
-  userType: 'customer' | 'provider' | null;
+  userType: 'driver' | 'provider' | null;
   isLoading: boolean;
   checkToken: () => Promise<void>;
   setToken: (token: string) => Promise<void>;
   setUser: (user: AuthUser) => Promise<void>;
-  setUserType: (userType: 'customer' | 'provider') => Promise<void>;
+  setUserType: (userType: 'driver' | 'provider') => Promise<void>;
   clearAuth: () => Promise<void>;
+  signup: (phone: string, password: string, repeatPassword: string, userType: 'driver' | 'provider') => Promise<{ success: boolean; message?: string }>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -53,7 +55,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  setUserType: async (userType: 'customer' | 'provider') => {
+  setUserType: async (userType: 'driver' | 'provider') => {
     try {
       await AsyncStorage.setItem('user_type', userType);
       set({ userType });
@@ -68,6 +70,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ token: null, user: null, userType: null });
     } catch (error) {
       console.error('Error clearing auth:', error);
+    }
+  },
+
+  signup: async (phone: string, password: string, repeatPassword: string, userType: 'driver' | 'provider') => {
+    set({ isLoading: true });
+    try {
+      const endpoint = userType === 'driver' ? '/drivers' : '/providers';
+      const response = await axios.post(endpoint, {
+        phone,
+        password,
+        repeatPassword,
+      });
+
+      if (response.data.success) {
+        // Store the token and user data
+        await get().setToken(response.data.data.token);
+        await get().setUser(response.data.data.user);
+        await get().setUserType(userType);
+        
+        set({ isLoading: false });
+        return { success: true };
+      } else {
+        set({ isLoading: false });
+        return { success: false, message: response.data.message || 'Registration failed' };
+      }
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      set({ isLoading: false });
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Network error occurred' 
+      };
     }
   },
 })); 

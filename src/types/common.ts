@@ -1,4 +1,4 @@
-export type UserType = 'customer' | 'provider';
+export type UserType = 'driver' | 'provider';
 
 export interface AuthUser {
   id: string;
