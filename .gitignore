@@ -43,3 +43,4 @@ ios/OTOGO.xcodeproj/xcuserdata/
 *.tmp
 *.bak
 *.orig
+node_modules
