@@ -12,7 +12,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
@@ -25,34 +25,25 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<LoginScreenProps['navigation']>();
   const { login, isLoading } = useAuthStore();
-  const [number, setNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const numberInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
-    // Xəta mesajını təmizlə
     setErrorMessage('');
     
-    // Frontend validasiyası
-    if (!number || !password) {
+    if (!email || !password) {
       setErrorMessage(t('Please fill in all fields.'));
       return;
     }
 
-    const result = await login(number, password);
+    const result = await login(email, password);
 
-    if (result.success) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: Routes.main }],
-        })
-      );
-    } else {
+    if (!result.success) {
       setErrorMessage(result.message || t('Login failed'));
     }
   };
@@ -91,7 +82,7 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
 
               <View>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>{t('Number')}</Text>
+                  <Text style={styles.inputLabel}>{t('Email')}</Text>
                   <View style={styles.inputContainer}>
                     <SvgImage
                       source={require('../../../assets/svg/auth/phone-icon.svg')}
@@ -101,12 +92,13 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
                       style={styles.inputIcon}
                     />
                     <TextInput
-                      ref={numberInputRef}
+                      ref={emailInputRef}
                       style={styles.input}
-                      placeholder={t('Enter your number')}
-                      keyboardType="phone-pad"
-                      value={number}
-                      onChangeText={setNumber}
+                      placeholder={t('Enter your email')}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={email}
+                      onChangeText={setEmail}
                       returnKeyType="next"
                       onSubmitEditing={() => passwordInputRef.current?.focus()}
                     />

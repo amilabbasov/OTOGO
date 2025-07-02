@@ -27,21 +27,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const route = useRoute<RegisterScreenProps['route']>();
   const { userType } = route.params;
   const { signup, isLoading } = useAuthStore();
-  const [number, setNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rePassword, setRePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showRePassword, setShowRePassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const numberInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
   const rePasswordInputRef = useRef<TextInput>(null);
 
-  const handleSignUp = async () => {
-    setErrorMessage('');
+  const handleSignUp = async () => {    setErrorMessage('');
+    setSuccessMessage('');
     
-    if (!number || !password || !rePassword) {
+    if (!email || !password || !rePassword) {
       setErrorMessage(t('Please fill in all fields.'));
       return;
     }
@@ -50,16 +51,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
       setErrorMessage(t('Passwords do not match.'));
       return;
     }
-
-    const result = await signup(number, password, rePassword, userType as 'driver' | 'provider');
+    
+    const result = await signup(email, password, rePassword, userType as 'driver' | 'provider');
 
     if (result.success) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: Routes.main }],
-        })
-      );
+      setSuccessMessage('Təsdiq kodu nömrənizə göndərildi');
+      
+      setTimeout(() => {
+        navigation.navigate(Routes.otp);
+      }, 2000);
     } else {
       setErrorMessage(result.message || t('Registration failed'));
     }
@@ -95,7 +95,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
 
               <View>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>{t('Number')}</Text>
+                  <Text style={styles.inputLabel}>{t('Email')}</Text>
                   <View style={styles.inputContainer}>
                     <SvgImage
                       source={require('../../../assets/svg/auth/phone-icon.svg')}
@@ -105,12 +105,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       style={styles.inputIcon}
                     />
                     <TextInput
-                      ref={numberInputRef}
+                      ref={emailInputRef}
                       style={styles.input}
-                      placeholder={t('Enter your number')}
-                      keyboardType="phone-pad"
-                      value={number}
-                      onChangeText={setNumber}
+                      placeholder={t('Enter your email')}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={email}
+                      onChangeText={setEmail}
                       returnKeyType="next"
                       onSubmitEditing={() => passwordInputRef.current?.focus()}
                     />
@@ -191,6 +192,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                 {errorMessage ? (
                   <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>{errorMessage}</Text>
+                  </View>
+                ) : null}
+
+                {/* Uğur mesajı */}
+                {successMessage ? (
+                  <View style={styles.successContainer}>
+                    <Text style={styles.successText}>{successMessage}</Text>
                   </View>
                 ) : null}
 
@@ -322,6 +330,26 @@ const styles = StyleSheet.create({
     color: '#CC0000',
     fontSize: 14,
     lineHeight: 20,
+  },
+  successContainer: {
+    backgroundColor: '#D1FAE5',
+    borderRadius: 8,
+    padding: 14,
+    marginTop: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  successText: {
+    color: '#047857',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   signUpButton: {
     backgroundColor: '#D5FF5F',

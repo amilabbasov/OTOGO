@@ -2,7 +2,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabIcon from '../components/navigation/TabIcon';
 
-// Import provider screens
 import ProviderHomeScreen from '../screens/provider/home/ProviderHomeScreen';
 import ProviderProfileScreen from '../screens/provider/profile/ProviderProfileScreen';
 import ProviderServicesScreen from '../screens/provider/services/ProviderServicesScreen'; 

@@ -71,9 +71,9 @@ const OtpScreen = () => {
             <View style={styles.innerContent}>
               <View style={styles.header}>
                 <Text style={styles.title}>{t('Verify')}</Text>
-                <Text style={styles.title}>{t('your number')}</Text>
+                <Text style={styles.title}>{t('your email')}</Text>
                 <Text style={styles.subtitle}>
-                  {t('To verify your account, enter the 6 digit OTP code that we sent to your number.')}
+                  {t('To verify your account, enter the 6 digit OTP code that we sent to your email.')}
                 </Text>
               </View>
               <View style={styles.otpRow}>
