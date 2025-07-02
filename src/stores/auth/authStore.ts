@@ -11,7 +11,7 @@ export const validateUserRoles = (roles: string[]): 'driver' | 'provider' => {
   // Direct role matches
   if (roles.includes('ROLE_PROVIDER')) return 'provider';
   if (roles.includes('ROLE_DRIVER')) return 'driver';
-  
+
   const providerRoles = [
     'ROLE_UPDATE_PROVIDER',
     'ROLE_DELETE_PROVIDER',
@@ -19,7 +19,7 @@ export const validateUserRoles = (roles: string[]): 'driver' | 'provider' => {
     'ROLE_READ_PROVIDER',
     'ROLE_MANAGE_PROVIDER'
   ];
-  
+
   const driverRoles = [
     'ROLE_UPDATE_DRIVER',
     'ROLE_DELETE_DRIVER',
@@ -27,17 +27,16 @@ export const validateUserRoles = (roles: string[]): 'driver' | 'provider' => {
     'ROLE_READ_DRIVER',
     'ROLE_MANAGE_DRIVER'
   ];
-  
+
   if (roles.some(role => providerRoles.includes(role))) {
     return 'provider';
   }
-  
+
   if (roles.some(role => driverRoles.includes(role))) {
     return 'driver';
   }
 
   if (roles.includes('ROLE_LOGIN') || roles.includes('ROLE_USER')) {
-    console.warn('Generic role detected, defaulting to driver:', roles);
     return 'driver';
   }
 
@@ -52,6 +51,9 @@ interface AuthState {
   checkToken: () => Promise<void>;
   clearAuth: () => Promise<void>;
   signup: (email: string, password: string, repeatPassword: string, userType: 'driver' | 'provider') => Promise<{ success: boolean; message?: string; requiresOTP?: boolean }>;
+  verifyOTP: (email: string, otpCode: string, userType: 'driver' | 'provider') => Promise<{ success: boolean; message?: string; requiresProfile?: boolean }>;
+  resendOTP: (email: string, userType: 'driver' | 'provider') => Promise<{ success: boolean; message?: string }>;
+  completeProfile: (email: string, firstName: string, lastName: string, phone: string, userType: 'driver' | 'provider') => Promise<{ success: boolean; message?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string; userType?: 'driver' | 'provider' }>;
 }
 
@@ -130,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       ['user_data', JSON.stringify(user)],
       ['user_type', userType]
     ]);
-    set({ token, user, userType });
+    set({ token, user, userType, isLoading: false });
   };
 
   const store = {
@@ -167,11 +169,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
         });
       } catch (error) {
         console.error('Error checking token:', error);
-        set({ 
-          token: null, 
-          userType: null, 
-          user: null, 
-          isLoading: false 
+        set({
+          token: null,
+          userType: null,
+          user: null,
+          isLoading: false
         });
       }
     },
@@ -214,7 +216,6 @@ export const useAuthStore = create<AuthState>((set, get) => {
           }
         } else {
           set({ isLoading: false });
-          // Response data-dan mesaj çıxar
           const errorMessage = response.data?.message || response.data?.error || 'Registration failed';
           return { success: false, message: errorMessage };
         }
@@ -228,15 +229,106 @@ export const useAuthStore = create<AuthState>((set, get) => {
       }
     },
 
+    verifyOTP: async (email: string, otpCode: string, userType: 'driver' | 'provider') => {
+      set({ isLoading: true });
+
+      try {
+        const endpoint = userType === 'driver' ? 'api/drivers/verify' : 'api/providers/verify-otp';
+        const payload = userType === 'driver' 
+          ? { email, token: otpCode }
+          : { email, otpCode };
+          
+        const response = await axiosInstance.post(endpoint, payload);
+
+        set({ isLoading: false });
+
+        if (response.status === 200) {
+          // Instead of logging the user in immediately, 
+          // return success and indicate that profile completion is required
+          return { success: true, requiresProfile: true };
+        } else {
+          const errorMessage = response.data?.message || response.data?.error || 'OTP verification failed';
+          return { success: false, message: errorMessage };
+        }
+      } catch (error: any) {
+        console.error('OTP verification error:', error);
+        set({ isLoading: false });
+        return {
+          success: false,
+          message: extractErrorMessage(error)
+        };
+      }
+    },
+
+    resendOTP: async (email: string, userType: 'driver' | 'provider') => {
+      set({ isLoading: true });
+
+      try {
+        const endpoint = userType === 'driver' ? 'api/drivers/resend-otp' : 'api/providers/resend-otp';
+        const response = await axiosInstance.post(endpoint, { email });
+
+        set({ isLoading: false });
+        
+        if (response.status === 200) {
+          return { success: true, message: 'OTP code resent successfully' };
+        } else {
+          const errorMessage = response.data?.message || response.data?.error || 'Failed to resend OTP';
+          return { success: false, message: errorMessage };
+        }
+      } catch (error: any) {
+        console.error('Resend OTP error:', error);
+        set({ isLoading: false });
+        return {
+          success: false,
+          message: extractErrorMessage(error)
+        };
+      }
+    },
+
+    completeProfile: async (email: string, firstName: string, lastName: string, phone: string, userType: 'driver' | 'provider') => {
+      set({ isLoading: true });
+
+      try {
+        const endpoint = userType === 'driver' ? 'api/drivers/complete-profile' : 'api/providers/complete-profile';
+        const response = await axiosInstance.post(endpoint, {
+          email,
+          firstName,
+          lastName,
+          phone,
+        });
+
+        if (response.status === 200 && response.data.token) {
+          const user = createUserFromResponse(response.data, email, userType);
+          // Update user with profile information
+          user.name = `${firstName} ${lastName}`;
+          user.phone = phone;
+          
+          await storeAuthData(response.data.token, user, userType);
+          return { success: true };
+        } else {
+          set({ isLoading: false });
+          const errorMessage = response.data?.message || response.data?.error || 'Failed to complete profile';
+          return { success: false, message: errorMessage };
+        }
+      } catch (error: any) {
+        console.error('Complete profile error:', error);
+        set({ isLoading: false });
+        return {
+          success: false,
+          message: extractErrorMessage(error)
+        };
+      }
+    },
+
     login: async (email: string, password: string) => {
       set({ isLoading: true });
 
       try {
         await AsyncStorage.removeItem('auth_token');
-        
+
         const loginData = { email, password };
         const response = await axiosInstance.post('api/auth/login', loginData);
-        
+
         console.log('Token:', response.data.token);
 
         if (response.status === 200 && response.data.token) {
@@ -246,7 +338,6 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
             await storeAuthData(response.data.token, user, userType);
 
-            set({ isLoading: false });
             return { success: true, userType };
           } catch (roleError: any) {
             console.error('Role validation error:', roleError);

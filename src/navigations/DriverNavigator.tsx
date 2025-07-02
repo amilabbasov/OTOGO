@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import TabIcon from '@/components/navigation/TabIcon';
+import TabIcon from '../components/navigation/TabIcon';
 
 import DriverHomeScreen from '../screens/driver/home/UserHomeScreen';
 import DriverProfileScreen from '../screens/driver/profile/UserProfileScreen';

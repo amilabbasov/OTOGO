@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'; // Import useRef
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
@@ -39,7 +39,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const passwordInputRef = useRef<TextInput>(null);
   const rePasswordInputRef = useRef<TextInput>(null);
 
-  const handleSignUp = async () => {    setErrorMessage('');
+  const handleSignUp = async () => {
+    setErrorMessage('');
     setSuccessMessage('');
     
     if (!email || !password || !rePassword) {
@@ -51,15 +52,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
       setErrorMessage(t('Passwords do not match.'));
       return;
     }
-    
+
+    // Explicit validation with proper typing
+    if (userType !== 'driver' && userType !== 'provider') {
+      setErrorMessage(t('Please select a valid user type.'));
+      return;
+    }
+
     const result = await signup(email, password, rePassword, userType as 'driver' | 'provider');
 
     if (result.success) {
-      setSuccessMessage('Təsdiq kodu nömrənizə göndərildi');
-      
-      setTimeout(() => {
-        navigation.navigate(Routes.otp);
-      }, 2000);
+      if (result.requiresOTP) {
+        setSuccessMessage('Təsdiq kodu nömrənizə göndərildi');
+        setTimeout(() => {
+          navigation.navigate(Routes.otp, { email, userType });
+        }, 2000);
+      }
     } else {
       setErrorMessage(result.message || t('Registration failed'));
     }

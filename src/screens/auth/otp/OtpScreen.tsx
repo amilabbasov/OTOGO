@@ -10,16 +10,23 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { AuthScreenProps } from '../../../navigations/types';
+import { Routes } from '../../../navigations/routes';
+import { useAuthStore } from '../../../stores/auth/authStore';
 
 const OTP_LENGTH = 6;
 const RESEND_TIME = 59;
 
 const OtpScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const navigation = useNavigation<AuthScreenProps<Routes.otp>['navigation']>();
+  const route = useRoute<AuthScreenProps<Routes.otp>['route']>();
+  const { email, userType } = route.params;
+  const { verifyOTP, resendOTP, isLoading } = useAuthStore();
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
@@ -50,13 +57,39 @@ const OtpScreen = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!isResendDisabled) {
-      setTimer(RESEND_TIME);
+      const result = await resendOTP(email, userType);
+      if (result.success) {
+        setTimer(RESEND_TIME);
+        Alert.alert(t('Success'), result.message || t('OTP code resent successfully'));
+      } else {
+        Alert.alert(t('Error'), result.message || t('Failed to resend OTP code'));
+      }
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
+    const otpCode = otp.join('');
+    
+    if (otpCode.length !== OTP_LENGTH) {
+      Alert.alert(t('Error'), t('Please enter the complete OTP code'));
+      return;
+    }
+
+    const result = await verifyOTP(email, otpCode, userType);
+    
+    if (result.success) {
+      if (result.requiresProfile) {
+        // Navigate to personal information screen
+        navigation.navigate(Routes.personalInfo, { email, userType });
+      } else {
+        // User is fully authenticated (shouldn't happen with new flow)
+        Alert.alert(t('Success'), t('OTP verified successfully'));
+      }
+    } else {
+      Alert.alert(t('Error'), result.message || t('OTP verification failed'));
+    }
   };
 
   return (
@@ -113,8 +146,15 @@ const OtpScreen = () => {
                 </Text>
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
-              <TouchableOpacity style={styles.verifyButton} onPress={handleVerify} activeOpacity={0.8}>
-                <Text style={styles.verifyButtonText}>{t('Verify')}</Text>
+              <TouchableOpacity 
+                style={[styles.verifyButton, isLoading && styles.verifyButtonDisabled]} 
+                onPress={handleVerify} 
+                activeOpacity={0.8}
+                disabled={isLoading}
+              >
+                <Text style={styles.verifyButtonText}>
+                  {isLoading ? t('Verifying...') : t('Verify')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.backButton} onPress={() => { navigation.goBack() }}>
                 <Text style={styles.backButtonText}>{t('Back')}</Text>
@@ -215,6 +255,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 14,
+  },
+  verifyButtonDisabled: {
+    opacity: 0.5,
   },
   verifyButtonText: {
     color: '#000',

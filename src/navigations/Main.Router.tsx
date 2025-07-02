@@ -11,7 +11,6 @@ export const MainRouter = () => {
   const { userType, token, user } = useAuthStore();
 
   if (!token || !user) {
-    console.warn('MainRouter: User not authenticated, redirecting to auth');
     return null;
   }
 

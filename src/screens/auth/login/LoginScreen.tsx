@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
+import { LanguageSelector } from '../../../components/languageSelector/LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../stores/auth/authStore';
 
@@ -42,7 +43,7 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
     }
 
     const result = await login(email, password);
-
+    
     if (!result.success) {
       setErrorMessage(result.message || t('Login failed'));
     }
@@ -65,19 +66,10 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
               <View style={styles.header}>
                 <Text style={styles.title}>{t('Sign In')}</Text>
                 <Text style={styles.subtitle}>{t('Welcome back to your account')}</Text>
+              </View>
 
-                <TouchableOpacity
-                  style={styles.signUpButton}
-                  onPress={() => navigation.goBack()}
-                >
-                  <Text style={styles.signUpButtonText}>{t('Sign Up')}</Text>
-                  <SvgImage
-                    source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')}
-                    width={16}
-                    height={16}
-                    color="#111"
-                  />
-                </TouchableOpacity>
+              <View style={styles.languageSelectorContainer}>
+                <LanguageSelector />
               </View>
 
               <View>
@@ -144,21 +136,33 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
                   <Text style={styles.forgotPasswordText}>{t('Forgot Password?')}</Text>
                 </TouchableOpacity>
 
-                {/* Xəta mesajı */}
                 {errorMessage ? (
                   <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>{errorMessage}</Text>
                   </View>
                 ) : null}
 
-                <TouchableOpacity 
-                  style={[styles.loginButton, isLoading && styles.disabledButton]} 
+                <TouchableOpacity
+                  style={[styles.loginButton, isLoading && styles.disabledButton]}
                   onPress={handleLogin}
                   disabled={isLoading}
                 >
                   <Text style={styles.loginButtonText}>
                     {isLoading ? t('Signing in...') : t('Sign In')}
                   </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.signUpButton}
+                  onPress={() => navigation.navigate(Routes.register, { userType: null })}
+                >
+                  <Text style={styles.signUpButtonText}>{t('Are you new to Otogo?')}</Text>
+                  <SvgImage
+                    source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')}
+                    width={20}
+                    height={20}
+                    color="#D5FF5F"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -189,6 +193,9 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 0,
   },
+  languageSelectorContainer: {
+    marginBottom: 24,
+  },
   title: {
     fontSize: 30,
     fontWeight: '700',
@@ -203,20 +210,21 @@ const styles = StyleSheet.create({
   },
   signUpButton: {
     flexDirection: 'row',
+    backgroundColor: '#14151A',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     alignItems: 'center',
-    backgroundColor: '#111',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    alignSelf: 'flex-start',
-    marginBottom: 40,
-    gap: 6,
+    justifyContent: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 8,
   },
   signUpButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '400',
-    marginRight: 4,
+    color: '#D5FF5F',
+    fontSize: 14,
+    fontWeight: '500',
   },
   inputGroup: {
     marginBottom: 28,

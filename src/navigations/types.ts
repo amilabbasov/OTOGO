@@ -13,7 +13,8 @@ export type AuthStackParamList = {
   [Routes.login]: undefined;
   [Routes.register]: { userType: string | null };
   [Routes.forgotPassword]: undefined;
-  [Routes.otp]: undefined;
+  [Routes.otp]: { email: string; userType: 'driver' | 'provider' };
+  [Routes.personalInfo]: { email: string; userType: 'driver' | 'provider' };
 };
 
 export type MainStackParamList = {
