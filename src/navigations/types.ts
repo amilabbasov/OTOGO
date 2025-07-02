@@ -17,7 +17,7 @@ export type AuthStackParamList = {
 };
 
 export type MainStackParamList = {
-  [Routes.customerTabs]: undefined;
+  [Routes.driverTabs]: undefined;
   [Routes.providerTabs]: undefined;
 };
 

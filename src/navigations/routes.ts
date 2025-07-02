@@ -14,11 +14,11 @@ export enum Routes {
     forgotPassword = 'forgotPassword',
     otp = 'otp',
     
-    // Customer routes
-    customerHome = 'customerHome',
-    customerServices = 'customerServices',
-    customerBookings = 'customerBookings',
-    customerProfile = 'customerProfile',
+    // Driver routes
+    driverHome = 'driverHome',
+    driverServices = 'driverServices',
+    driverBookings = 'driverBookings',
+    driverProfile = 'driverProfile',
     
     // Provider routes
     providerHome = 'providerHome',
@@ -28,6 +28,6 @@ export enum Routes {
     providerProfile = 'providerProfile',
     
     // Tab navigators
-    customerTabs = 'customerTabs',
+    driverTabs = 'driverTabs',
     providerTabs = 'providerTabs',
 } 

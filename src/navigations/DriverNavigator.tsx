@@ -2,11 +2,11 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabIcon from '@/components/navigation/TabIcon';
 
-// Import customer screens
-import CustomerHomeScreen from '../screens/driver/home/UserHomeScreen';
-import CustomerProfileScreen from '../screens/driver/profile/UserProfileScreen';
-import CustomerServicesScreen from '../screens/driver/services/UserServicesScreen';
-import CustomerBookingsScreen from '../screens/driver/bookings/UserBookingsScreen';
+// Import driver screens
+import DriverHomeScreen from '../screens/driver/home/UserHomeScreen';
+import DriverProfileScreen from '../screens/driver/profile/UserProfileScreen';
+import DriverServicesScreen from '../screens/driver/services/UserServicesScreen';
+import DriverBookingsScreen from '../screens/driver/bookings/UserBookingsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -15,7 +15,7 @@ const TabBarIcon = ({ route, focused }: { route: string; focused: boolean }) => 
   <TabIcon route={route} focused={focused} />
 );
 
-const CustomerNavigator = () => {
+const DriverNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -27,12 +27,12 @@ const CustomerNavigator = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={CustomerHomeScreen} />
-      <Tab.Screen name="Services" component={CustomerServicesScreen} />
-      <Tab.Screen name="Bookings" component={CustomerBookingsScreen} />
-      <Tab.Screen name="Profile" component={CustomerProfileScreen} />
+      <Tab.Screen name="Home" component={DriverHomeScreen} />
+      <Tab.Screen name="Services" component={DriverServicesScreen} />
+      <Tab.Screen name="Bookings" component={DriverBookingsScreen} />
+      <Tab.Screen name="Profile" component={DriverProfileScreen} />
     </Tab.Navigator>
   );
 };
 
-export default CustomerNavigator; 
+export default DriverNavigator; 

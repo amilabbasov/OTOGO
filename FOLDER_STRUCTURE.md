@@ -1,7 +1,7 @@
 # otogo - Professional Folder Structure
 
 ## Overview
-otogo is a service marketplace app connecting customers with service providers. The app has two main user types with different interfaces and functionalities.
+otogo is a service marketplace app connecting drivers with service providers. The app has two main user types with different interfaces and functionalities.
 
 ## User Types
 - **Driver**: Books services, finds providers, manages bookings

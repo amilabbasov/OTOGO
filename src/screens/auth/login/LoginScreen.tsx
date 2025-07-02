@@ -12,7 +12,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
@@ -46,9 +46,13 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
     const result = await login(number, password);
 
     if (result.success) {
-      // Navigation will be handled by the auth store
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: Routes.main }],
+        })
+      );
     } else {
-      // Backend-dən gələn xəta mesajını göstər
       setErrorMessage(result.message || t('Login failed'));
     }
   };

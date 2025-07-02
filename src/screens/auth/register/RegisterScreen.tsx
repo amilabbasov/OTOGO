@@ -12,7 +12,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
@@ -39,10 +39,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const rePasswordInputRef = useRef<TextInput>(null);
 
   const handleSignUp = async () => {
-    // Xəta mesajını təmizlə
     setErrorMessage('');
     
-    // Frontend validasiyası
     if (!number || !password || !rePassword) {
       setErrorMessage(t('Please fill in all fields.'));
       return;
@@ -56,7 +54,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
     const result = await signup(number, password, rePassword, userType as 'driver' | 'provider');
 
     if (result.success) {
-      navigation.navigate(Routes.otp);
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: Routes.main }],
+        })
+      );
     } else {
       setErrorMessage(result.message || t('Registration failed'));
     }
