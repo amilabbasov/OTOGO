@@ -26,24 +26,30 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const navigation = useNavigation<RegisterScreenProps['navigation']>();
   const route = useRoute<RegisterScreenProps['route']>();
   const { userType } = route.params;
-  const { signup } = useAuthStore();
+  const { signup, isLoading } = useAuthStore();
   const [number, setNumber] = useState('');
   const [password, setPassword] = useState('');
   const [rePassword, setRePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showRePassword, setShowRePassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const numberInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
   const rePasswordInputRef = useRef<TextInput>(null);
 
   const handleSignUp = async () => {
+    // Xəta mesajını təmizlə
+    setErrorMessage('');
+    
+    // Frontend validasiyası
     if (!number || !password || !rePassword) {
-      Alert.alert(t('Error'), t('Please fill in all fields.'));
+      setErrorMessage(t('Please fill in all fields.'));
       return;
     }
+    
     if (password !== rePassword) {
-      Alert.alert(t('Error'), t('Passwords do not match.'));
+      setErrorMessage(t('Passwords do not match.'));
       return;
     }
 
@@ -52,7 +58,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
     if (result.success) {
       navigation.navigate(Routes.otp);
     } else {
-      Alert.alert(t('Error'), result.message || t('Registration failed'));
+      setErrorMessage(result.message || t('Registration failed'));
     }
   };
 
@@ -178,8 +184,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-                  <Text style={styles.signUpButtonText}>{t('Sign Up')}</Text>
+                {/* Xəta mesajı */}
+                {errorMessage ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity 
+                  style={[styles.signUpButton, isLoading && styles.disabledButton]} 
+                  onPress={handleSignUp}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.signUpButtonText}>
+                    {isLoading ? t('Signing up...') : t('Sign Up')}
+                  </Text>
                 </TouchableOpacity>
 
                 <Text style={styles.termsText}>
@@ -288,6 +307,19 @@ const styles = StyleSheet.create({
   eyeIcon: {
     paddingLeft: 12,
   },
+  errorContainer: {
+    backgroundColor: '#FFE6E6',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF4444',
+  },
+  errorText: {
+    color: '#CC0000',
+    fontSize: 14,
+    lineHeight: 20,
+  },
   signUpButton: {
     backgroundColor: '#D5FF5F',
     borderRadius: 14,
@@ -301,6 +333,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  disabledButton: {
+    backgroundColor: '#E0E0E0',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   signUpButtonText: {
     color: '#000',

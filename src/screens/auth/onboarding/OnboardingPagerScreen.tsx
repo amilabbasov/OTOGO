@@ -4,7 +4,7 @@ import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import PagerView from 'react-native-pager-view';
 import OnboardingScreen from './OnboardingScreen';
-import UserTypeSelection from './UserTypeSelectionScreen'; 
+import UserTypeSelection from './UserTypeSelectionScreen';
 
 type Props = AuthScreenProps<Routes.onboardingPager>;
 

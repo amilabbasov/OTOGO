@@ -47,7 +47,7 @@ const ChangeLanguageScreen: React.FC<Props> = ({ navigation }) => {
           ))}
         </View>
       </View>
-      
+
       <TouchableOpacity
         style={[styles.continueButton, !selected && styles.disabledButton]}
         onPress={handleContinue}
@@ -57,11 +57,11 @@ const ChangeLanguageScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={[styles.continueButtonText, !selected && styles.disabledButtonText]}>
           {t('Save and Continue')}
         </Text>
-        <SvgImage 
-          source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} 
-          width={20} 
-          height={20} 
-          style={styles.buttonArrow} 
+        <SvgImage
+          source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')}
+          width={20}
+          height={20}
+          style={styles.buttonArrow}
         />
       </TouchableOpacity>
     </SafeAreaView>

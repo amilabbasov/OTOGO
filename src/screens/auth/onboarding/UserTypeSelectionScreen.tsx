@@ -76,7 +76,7 @@ const UserTypeSelection = () => {
       </View>
       <TouchableOpacity
         style={[styles.button, !selected && { opacity: 0.5 }]}
-          disabled={!selected}
+        disabled={!selected}
         onPress={() =>
           navigation.navigate(Routes.register, { userType: selected })
         }

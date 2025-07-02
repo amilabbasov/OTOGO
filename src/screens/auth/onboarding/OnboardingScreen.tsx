@@ -15,8 +15,8 @@ const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.phoneMockup}>
-                <Image 
-                    source={require('../../../assets/images/onboarding/mockup.png')} 
+                <Image
+                    source={require('../../../assets/images/onboarding/mockup.png')}
                     style={styles.mockupImage}
                     resizeMode="contain"
                 />
@@ -63,8 +63,8 @@ const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { 
-        flex: 1, 
+    container: {
+        flex: 1,
         backgroundColor: '#F8FAF9',
     },
     phoneMockup: {
@@ -105,24 +105,24 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginTop: 2
     },
-    notifTime: { 
-        color: '#00000033', 
+    notifTime: {
+        color: '#00000033',
         fontSize: 16,
         fontWeight: '600',
-        marginLeft: 8 
+        marginLeft: 8
     },
-    textBlock: { 
-        marginTop: 120, 
+    textBlock: {
+        marginTop: 120,
         paddingHorizontal: 24,
         gap: 80
     },
-    headline: { 
-        fontSize: 36, 
-        fontWeight: '700', 
-        color: '#111', 
+    headline: {
+        fontSize: 36,
+        fontWeight: '700',
+        color: '#111',
     },
-    subtitle: { 
-        color: '#888', 
+    subtitle: {
+        color: '#888',
         fontSize: 14,
         fontWeight: '400',
     },
@@ -137,13 +137,13 @@ const styles = StyleSheet.create({
         marginTop: 'auto',
         marginBottom: 20,
     },
-    buttonText: { 
-        color: '#fff', 
-        fontSize: 18, 
-        fontWeight: '600', 
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
         marginRight: 8,
     },
-    buttonArrow: { 
+    buttonArrow: {
         marginLeft: 8,
     },
     mockupImage: {
