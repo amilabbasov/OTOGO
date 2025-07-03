@@ -37,39 +37,54 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
 
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
-  const rePasswordInputRef = useRef<TextInput>(null);
-
-  const handleSignUp = async () => {
+  const rePasswordInputRef = useRef<TextInput>(null);  const handleSignUp = async () => {
     setErrorMessage('');
     setSuccessMessage('');
-    
+
+    if (!userType) {
+      setErrorMessage(t('User type is required. Please go back and select your account type.'));
+      return;
+    }
+
     if (!email || !password || !rePassword) {
       setErrorMessage(t('Please fill in all fields.'));
       return;
     }
-    
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage(t('Please enter a valid email address.'));
+      return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      setErrorMessage(t('Password must be at least 6 characters long.'));
+      return;
+    }
+
+    // Password match validation
     if (password !== rePassword) {
       setErrorMessage(t('Passwords do not match.'));
       return;
     }
 
-    // Explicit validation with proper typing
-    if (userType !== 'driver' && userType !== 'provider') {
-      setErrorMessage(t('Please select a valid user type.'));
-      return;
-    }
+    try {
+      const result = await signup(email, password, rePassword, userType);
 
-    const result = await signup(email, password, rePassword, userType as 'driver' | 'provider');
-
-    if (result.success) {
-      if (result.requiresOTP) {
-        setSuccessMessage('Təsdiq kodu nömrənizə göndərildi');
+      if (result.success) {
+        setSuccessMessage(t('Registration successful! Please check your email for the OTP code.'));
+        
+        // Navigate to OTP screen after a short delay
         setTimeout(() => {
           navigation.navigate(Routes.otp, { email, userType });
-        }, 2000);
+        }, 1500);
+      } else {
+        setErrorMessage(result.message || t('Registration failed. Please try again.'));
       }
-    } else {
-      setErrorMessage(result.message || t('Registration failed'));
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrorMessage(t('An unexpected error occurred. Please try again.'));
     }
   };
 
@@ -210,8 +225,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                   </View>
                 ) : null}
 
-                <TouchableOpacity 
-                  style={[styles.signUpButton, isLoading && styles.disabledButton]} 
+                <TouchableOpacity
+                  style={[styles.signUpButton, isLoading && styles.disabledButton]}
                   onPress={handleSignUp}
                   disabled={isLoading}
                 >

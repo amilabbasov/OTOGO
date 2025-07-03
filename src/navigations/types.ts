@@ -8,10 +8,9 @@ export type RootStackParamList = {
 };
 
 export type AuthStackParamList = {
-  [Routes.changeLanguage]: undefined;
   [Routes.onboardingPager]: undefined;
   [Routes.login]: undefined;
-  [Routes.register]: { userType: string | null };
+  [Routes.register]: { userType: 'driver' | 'provider' | null };
   [Routes.forgotPassword]: undefined;
   [Routes.otp]: { email: string; userType: 'driver' | 'provider' };
   [Routes.personalInfo]: { email: string; userType: 'driver' | 'provider' };

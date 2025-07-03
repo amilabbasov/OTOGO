@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, Animated, Dimensions } from 'react-native';
+import { View, StyleSheet, SafeAreaView, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import OnboardingScreen from './OnboardingScreen';
 import UserTypeSelection from './UserTypeSelectionScreen';
 import ProviderTypeSelection from './ProviderTypeSelectionScreen';
 import ServiceSelection from './ServiceSelectionScreen';
+import { SvgImage } from '../../../components/svgImage/SvgImage';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -15,26 +16,29 @@ type ScreenType = 'onboarding' | 'userType' | 'providerType' | 'service';
 
 const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('onboarding');
-  const [userType, setUserType] = useState<string>('');
+  const [userType, setUserType] = useState<'driver' | 'provider' | null>(null);
   const [providerType, setProviderType] = useState<string>('');
   const [service, setService] = useState<string>('');
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const animateToScreen = (newScreen: ScreenType) => {
+  const animateToScreen = (newScreen: ScreenType, reverse = false) => {
     if (isAnimating) return;
 
     setIsAnimating(true);
 
+    const slideDirection = reverse ? screenWidth : -screenWidth;
+    const slideStart = reverse ? -screenWidth : screenWidth;
+
     Animated.timing(slideAnim, {
-      toValue: -screenWidth,
+      toValue: slideDirection,
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
       setCurrentScreen(newScreen);
 
-      slideAnim.setValue(screenWidth);
+      slideAnim.setValue(slideStart);
 
       Animated.timing(slideAnim, {
         toValue: 0,
@@ -47,21 +51,45 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleNext = () => {
-    animateToScreen('userType');
+    animateToScreen('userType', false);
   };
 
-  const handleUserTypeSelection = (selectedUserType: string) => {
-    setUserType(selectedUserType);
-    if (selectedUserType === 'provider') {
-      animateToScreen('providerType');
+  const handleBack = () => {
+    switch (currentScreen) {
+      case 'userType':
+        animateToScreen('onboarding', true);
+        break;
+      case 'providerType':
+        animateToScreen('userType', true);
+        break;
+      case 'service':
+        animateToScreen('providerType', true);
+        break;
+      default:
+        navigation.goBack();
+        break;
+    }
+  };
+
+  const handleUserTypeSelection = (userType: string) => {
+    if (userType === 'driver' || userType === 'provider') {
+      setUserType(userType);
+      
+      if (userType === 'driver') {
+        navigation.navigate(Routes.register, {
+          userType: userType
+        });
+      } else {
+        animateToScreen('providerType', false);
+      }
     } else {
-      navigation.navigate(Routes.register, { userType: selectedUserType });
+      console.error('Invalid user type:', userType);
     }
   };
 
   const handleProviderTypeSelection = (selectedProviderType: string) => {
     setProviderType(selectedProviderType);
-    animateToScreen('service');
+    animateToScreen('service', false);
   };
 
   const handleServiceSelection = (selectedService: string) => {
@@ -88,6 +116,17 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {currentScreen !== 'onboarding' && (
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <SvgImage 
+            source={require('../../../assets/svg/auth/goBack.svg')} 
+            width={40} 
+            height={40} 
+            color="#111" 
+          />
+        </TouchableOpacity>
+      )}
+      
       <Animated.View
         style={[
           styles.screenContainer,
@@ -106,6 +145,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAF9',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    zIndex: 10,
   },
   screenContainer: {
     flex: 1,

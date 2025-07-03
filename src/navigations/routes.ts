@@ -5,7 +5,6 @@ export enum Routes {
     main = 'main',
     
     // Onboarding routes
-    changeLanguage = 'changeLanguage',
     onboardingPager = 'onboardingPager',
     
     // Auth routes

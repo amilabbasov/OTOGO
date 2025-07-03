@@ -193,7 +193,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const endpoint = userType === 'driver' ? '/api/drivers' : '/api/providers';
         console.log('Signup request:', { endpoint, email, userType });
-        
+
         const response = await axiosInstance.post(endpoint, {
           email,
           password,
@@ -211,13 +211,6 @@ export const useAuthStore = create<AuthState>((set, get) => {
           return { success: false, message: errorMessage };
         }
       } catch (error: any) {
-        console.error('Signup error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          response: error.response?.data,
-          status: error.response?.status
-        });
         set({ isLoading: false });
         return {
           success: false,
@@ -231,10 +224,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
       try {
         const endpoint = userType === 'driver' ? '/api/drivers/verify' : '/api/providers/verify-otp';
-        const payload = userType === 'driver' 
+        const payload = userType === 'driver'
           ? { email, token: otpCode }
           : { email, otpCode };
-          
+
         const response = await axiosInstance.post(endpoint, payload);
 
         set({ isLoading: false });
@@ -265,7 +258,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const response = await axiosInstance.post(endpoint, { email });
 
         set({ isLoading: false });
-        
+
         if (response.status === 200) {
           return { success: true, message: 'OTP code resent successfully' };
         } else {
@@ -299,7 +292,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
           // Update user with profile information
           user.name = `${firstName} ${lastName}`;
           user.phone = phone;
-          
+
           await storeAuthData(response.data.token, user, userType);
           return { success: true };
         } else {

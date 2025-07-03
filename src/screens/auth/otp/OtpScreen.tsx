@@ -32,6 +32,25 @@ const OtpScreen = () => {
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
+  // Add debug logging for OTP screen mount/focus
+  useEffect(() => {
+    console.log('OTP Screen mounted with params:', { email, userType });
+    
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      console.log('OTP Screen focused');
+    });
+    
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      console.log('OTP Screen blurred');
+    });
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+      console.log('OTP Screen unmounted');
+    };
+  }, [navigation, email, userType]);
+
   useEffect(() => {
     if (timer === 0) {
       setIsResendDisabled(false);
@@ -280,4 +299,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OtpScreen; 
+export default OtpScreen;
