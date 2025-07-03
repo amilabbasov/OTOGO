@@ -70,85 +70,87 @@ const PersonalInfoScreen = () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.container}>
           <View style={styles.innerContent}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Your</Text>
-              <Text style={styles.title}>Information</Text>
-              <Text style={styles.subtitle}>
-                Please fill in your identity correctly
-              </Text>
+            <View style={styles.contentPadding}>
+              <View style={styles.header}>
+                <Text style={styles.title}>Your</Text>
+                <Text style={styles.title}>Information</Text>
+                <Text style={styles.subtitle}>
+                  Please fill in your identity correctly
+                </Text>
+              </View>
+
+              <View style={styles.form}>
+                <View style={styles.nameRow}>
+                  <View style={styles.nameInputGroup}>
+                    <Text style={styles.label}>First name</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      placeholder="Name"
+                      placeholderTextColor="#C6C6C6"
+                      autoCapitalize="words"
+                      autoComplete="given-name"
+                    />
+                  </View>
+                  
+                  <View style={styles.nameInputGroup}>
+                    <Text style={styles.label}>Last name</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={lastName}
+                      onChangeText={setLastName}
+                      placeholder="Surname"
+                      placeholderTextColor="#C6C6C6"
+                      autoCapitalize="words"
+                      autoComplete="family-name"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>E-mail*</Text>
+                  <View style={styles.inputContainer}>
+                    <SvgImage
+                      source={require('../../../assets/svg/personalInfo/email.svg')}
+                      width={20}
+                      height={20}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.input, styles.inputWithIcon]}
+                      value={email}
+                      placeholder="Enter your email"
+                      placeholderTextColor="#C6C6C6"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      editable={false}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Date of birth</Text>
+                  <View style={styles.inputContainer}>
+                    <SvgImage
+                      source={require('../../../assets/svg/personalInfo/calendar.svg')}
+                      width={20}
+                      height={20}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.input, styles.inputWithIcon]}
+                      value={dateOfBirth}
+                      onChangeText={setDateOfBirth}
+                      placeholder="Birthday"
+                      placeholderTextColor="#C6C6C6"
+                    />
+                  </View>
+                </View>
+              </View>
             </View>
 
-            <View style={styles.form}>
-              <View style={styles.nameRow}>
-                <View style={styles.nameInputGroup}>
-                  <Text style={styles.label}>First name</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    placeholder="Name"
-                    placeholderTextColor="#C6C6C6"
-                    autoCapitalize="words"
-                    autoComplete="given-name"
-                  />
-                </View>
-                
-                <View style={styles.nameInputGroup}>
-                  <Text style={styles.label}>Last name</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={lastName}
-                    onChangeText={setLastName}
-                    placeholder="Surname"
-                    placeholderTextColor="#C6C6C6"
-                    autoCapitalize="words"
-                    autoComplete="family-name"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>E-mail*</Text>
-                <View style={styles.inputContainer}>
-                  <SvgImage
-                    source={require('../../../assets/svg/personalInfo/email.svg')}
-                    width={20}
-                    height={20}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.inputWithIcon]}
-                    value={email}
-                    placeholder="Enter your email"
-                    placeholderTextColor="#C6C6C6"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    editable={false}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Date of birth</Text>
-                <View style={styles.inputContainer}>
-                  <SvgImage
-                    source={require('../../../assets/svg/personalInfo/calendar.svg')}
-                    width={20}
-                    height={20}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.inputWithIcon]}
-                    value={dateOfBirth}
-                    onChangeText={setDateOfBirth}
-                    placeholder="Birthday"
-                    placeholderTextColor="#C6C6C6"
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View style={{ flex: 1 }} />
+            <View style={{ flex: 1, marginBottom: 20 }} />
 
             <TouchableOpacity 
               style={[styles.continueButton, isLoading && styles.continueButtonDisabled]} 
@@ -175,12 +177,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     paddingTop: 20,
   },
   innerContent: {
     flex: 1,
     justifyContent: 'flex-start',
+  },
+  contentPadding: {
+    paddingHorizontal: 10,
   },
   header: {
     marginBottom: 40,
@@ -254,7 +259,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 20,
   },
   continueButtonDisabled: {
     opacity: 0.5,
