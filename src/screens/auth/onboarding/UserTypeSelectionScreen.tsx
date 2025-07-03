@@ -88,7 +88,7 @@ const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ onNext }) => {
         disabled={!selected}
         onPress={handleContinue}
       >
-        <Text style={styles.buttonText}>{t('Get Started')}</Text>
+        <Text style={styles.buttonText}>{t('Next')}</Text>
         <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
       </TouchableOpacity>
     </SafeAreaView>

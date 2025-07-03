@@ -191,29 +191,20 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ isLoading: true });
 
       try {
-        const endpoint = userType === 'driver' ? 'api/drivers' : 'api/providers';
+        const endpoint = userType === 'driver' ? '/api/drivers' : '/api/providers';
+        console.log('Signup request:', { endpoint, email, userType });
+        
         const response = await axiosInstance.post(endpoint, {
           email,
           password,
           repeatPassword,
         });
 
-        if (response.status >= 200 && response.status < 300) {
-          if (response.data.message && response.data.message.includes('OTP') || response.data.otpSent) {
-            set({ isLoading: false });
-            return { success: true, requiresOTP: true };
-          }
-          else if (response.data.token) {
-            const user = createUserFromResponse(response.data, email, userType);
-            await storeAuthData(response.data.token, user, userType);
+        console.log('Signup response:', response.status, response.data);
 
-            set({ isLoading: false });
-            return { success: true, requiresOTP: false };
-          }
-          else {
-            set({ isLoading: false });
-            return { success: true, requiresOTP: true };
-          }
+        if (response.status >= 200 && response.status < 300) {
+          set({ isLoading: false });
+          return { success: true, requiresOTP: true };
         } else {
           set({ isLoading: false });
           const errorMessage = response.data?.message || response.data?.error || 'Registration failed';
@@ -221,6 +212,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
       } catch (error: any) {
         console.error('Signup error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data,
+          status: error.response?.status
+        });
         set({ isLoading: false });
         return {
           success: false,
@@ -233,7 +230,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ isLoading: true });
 
       try {
-        const endpoint = userType === 'driver' ? 'api/drivers/verify' : 'api/providers/verify-otp';
+        const endpoint = userType === 'driver' ? '/api/drivers/verify' : '/api/providers/verify-otp';
         const payload = userType === 'driver' 
           ? { email, token: otpCode }
           : { email, otpCode };
@@ -264,7 +261,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ isLoading: true });
 
       try {
-        const endpoint = userType === 'driver' ? 'api/drivers/resend-otp' : 'api/providers/resend-otp';
+        const endpoint = userType === 'driver' ? '/api/drivers/resend-otp' : '/api/providers/resend-otp';
         const response = await axiosInstance.post(endpoint, { email });
 
         set({ isLoading: false });
@@ -289,7 +286,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ isLoading: true });
 
       try {
-        const endpoint = userType === 'driver' ? 'api/drivers/complete-profile' : 'api/providers/complete-profile';
+        const endpoint = userType === 'driver' ? '/api/drivers/complete-profile' : '/api/providers/complete-profile';
         const response = await axiosInstance.post(endpoint, {
           email,
           firstName,
@@ -327,7 +324,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         await AsyncStorage.removeItem('auth_token');
 
         const loginData = { email, password };
-        const response = await axiosInstance.post('api/auth/login', loginData);
+        const response = await axiosInstance.post('/api/auth/login', loginData);
 
         console.log('Token:', response.data.token);
 

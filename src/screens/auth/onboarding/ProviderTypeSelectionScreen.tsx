@@ -85,7 +85,7 @@ const ProviderTypeSelection: React.FC<ProviderTypeSelectionProps> = ({ onNext })
         disabled={!selected}
         onPress={handleContinue}
       >
-        <Text style={styles.buttonText}>{t('Continue')}</Text>
+        <Text style={styles.buttonText}>{t('Next')}</Text>
         <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
       </TouchableOpacity>
     </SafeAreaView>
@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     textAlign: 'center',
+    paddingHorizontal: 24,
     lineHeight: 48,
     fontWeight: '700',
     marginBottom: 100,

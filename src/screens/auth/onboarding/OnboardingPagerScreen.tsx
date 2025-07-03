@@ -1,34 +1,59 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, SafeAreaView, Animated, Dimensions } from 'react-native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
-import PagerView from 'react-native-pager-view';
 import OnboardingScreen from './OnboardingScreen';
 import UserTypeSelection from './UserTypeSelectionScreen';
 import ProviderTypeSelection from './ProviderTypeSelectionScreen';
 import ServiceSelection from './ServiceSelectionScreen';
 
+const { width: screenWidth } = Dimensions.get('window');
+
 type Props = AuthScreenProps<Routes.onboardingPager>;
 
+type ScreenType = 'onboarding' | 'userType' | 'providerType' | 'service';
+
 const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
-  const pagerRef = useRef<PagerView>(null);
-  const [page, setPage] = useState(0);
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>('onboarding');
   const [userType, setUserType] = useState<string>('');
   const [providerType, setProviderType] = useState<string>('');
   const [service, setService] = useState<string>('');
 
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const animateToScreen = (newScreen: ScreenType) => {
+    if (isAnimating) return;
+
+    setIsAnimating(true);
+
+    Animated.timing(slideAnim, {
+      toValue: -screenWidth,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentScreen(newScreen);
+
+      slideAnim.setValue(screenWidth);
+
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsAnimating(false);
+      });
+    });
+  };
+
   const handleNext = () => {
-    if (pagerRef.current) {
-      pagerRef.current.setPage(1);
-    }
+    animateToScreen('userType');
   };
 
   const handleUserTypeSelection = (selectedUserType: string) => {
     setUserType(selectedUserType);
     if (selectedUserType === 'provider') {
-      if (pagerRef.current) {
-        pagerRef.current.setPage(2);
-      }
+      animateToScreen('providerType');
     } else {
       navigation.navigate(Routes.register, { userType: selectedUserType });
     }
@@ -36,43 +61,43 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleProviderTypeSelection = (selectedProviderType: string) => {
     setProviderType(selectedProviderType);
-    if (pagerRef.current) {
-      pagerRef.current.setPage(3);
-    }
+    animateToScreen('service');
   };
 
   const handleServiceSelection = (selectedService: string) => {
     setService(selectedService);
-    navigation.navigate(Routes.register, { 
+    navigation.navigate(Routes.register, {
       userType: userType
     });
   };
 
+  const renderCurrentScreen = () => {
+    switch (currentScreen) {
+      case 'onboarding':
+        return <OnboardingScreen onNext={handleNext} />;
+      case 'userType':
+        return <UserTypeSelection onNext={handleUserTypeSelection} />;
+      case 'providerType':
+        return <ProviderTypeSelection onNext={handleProviderTypeSelection} />;
+      case 'service':
+        return <ServiceSelection onNext={handleServiceSelection} />;
+      default:
+        return <OnboardingScreen onNext={handleNext} />;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <PagerView
-        style={styles.pager}
-        initialPage={0}
-        scrollEnabled={false}
-        overdrag={false}
-        keyboardDismissMode="none"
-        pageMargin={0}
-        ref={pagerRef}
-        onPageSelected={e => setPage(e.nativeEvent.position)}
+      <Animated.View
+        style={[
+          styles.screenContainer,
+          {
+            transform: [{ translateX: slideAnim }]
+          }
+        ]}
       >
-        <View key="onboarding">
-          <OnboardingScreen onNext={handleNext} />
-        </View>
-        <View key="userType">
-          <UserTypeSelection onNext={handleUserTypeSelection} />
-        </View>
-        <View key="providerType">
-          <ProviderTypeSelection onNext={handleProviderTypeSelection} />
-        </View>
-        <View key="service">
-          <ServiceSelection onNext={handleServiceSelection} />
-        </View>
-      </PagerView>
+        {renderCurrentScreen()}
+      </Animated.View>
     </SafeAreaView>
   );
 };
@@ -82,8 +107,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAF9',
   },
-  pager: {
+  screenContainer: {
     flex: 1,
+    width: screenWidth,
   },
 });
 
