@@ -50,7 +50,7 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(t('Forgot Password'), t('Password reset functionality coming soon'));
+    navigation.navigate(Routes.forgotPassword);
   };
 
   return (
@@ -153,7 +153,7 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
 
                 <TouchableOpacity
                   style={styles.signUpButton}
-                  onPress={() => navigation.navigate(Routes.register, { userType: null })}
+                  onPress={() => navigation.navigate(Routes.onboardingPager)}
                 >
                   <Text style={styles.signUpButtonText}>{t('Are you new to Otogo?')}</Text>
                   <SvgImage

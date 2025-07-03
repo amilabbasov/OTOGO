@@ -7,52 +7,42 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
-import type { AuthScreenProps } from '../../../navigations/types';
-import { Routes } from '../../../navigations/routes';
 
 const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 
-const roles = [
-  { id: 'provider', label: 'I want to provide services' },
-  { id: 'driver', label: 'I want to receive services' },
+const services = [
+  { id: 'automotive-service', label: 'Automotive Service' },
+  { id: 'automotive-store', label: 'Automotive Store' },
+  { id: 'evacuator', label: 'Evacuator' },
+  { id: 'sober-driver', label: 'Sober Driver' },
 ];
 
-const CARD_WIDTH = 160;
-const CARD_HEIGHT = 200;
+const CARD_WIDTH = 140;
+const CARD_HEIGHT = 160;
 
-interface UserTypeSelectionProps {
-  onNext: (userType: string) => void;
+interface ServiceSelectionProps {
+  onNext: (service: string) => void;
 }
 
-const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ onNext }) => {
+const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  const handleContinue = () => {
-    if (selected) {
-      onNext(selected);
-    }
-  };
-
-  const getSharedStyles = (roleId: string, isSelected: boolean) => {
-    const scale = useSharedValue(isSelected ? 1.1 : 1);
-    const translateY = useSharedValue(isSelected ? -20 : 0);
-    const rotate = useSharedValue(roleId === 'provider' ? -15 : 15);
+  const getSharedStyles = (serviceId: string, isSelected: boolean) => {
+    const scale = useSharedValue(isSelected ? 1.05 : 1);
+    const translateY = useSharedValue(isSelected ? -10 : 0);
     const zIndex = isSelected ? 2 : 1;
     const elevation = isSelected ? 12 : 4;
 
     React.useEffect(() => {
-      scale.value = withSpring(isSelected ? 1.1 : 1);
-      translateY.value = withSpring(isSelected ? -20 : 0);
-      rotate.value = withSpring(isSelected ? 0 : (roleId === 'provider' ? -15 : 15));
+      scale.value = withSpring(isSelected ? 1.05 : 1);
+      translateY.value = withSpring(isSelected ? -10 : 0);
     }, [isSelected]);
 
     const style = useAnimatedStyle(() => ({
       transform: [
         { scale: scale.value },
         { translateY: translateY.value },
-        { rotate: `${rotate.value}deg` }
       ],
       zIndex,
       elevation,
@@ -61,23 +51,29 @@ const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ onNext }) => {
     return style;
   };
 
+  const handleContinue = () => {
+    if (selected) {
+      onNext(selected);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.centeredGroup}>
-        <Text style={styles.title}>{t('Why are you using Otogo?')}</Text>
-        <View style={styles.cardContainer}>
-          {roles.map(role => {
-            const isSelected = selected === role.id;
-            const animatedStyle = getSharedStyles(role.id, isSelected);
+        <Text style={styles.title}>{t('What services do you offer?')}</Text>
+        <View style={styles.cardGrid}>
+          {services.map(service => {
+            const isSelected = selected === service.id;
+            const animatedStyle = getSharedStyles(service.id, isSelected);
 
             return (
               <AnimatedTouchable
-                key={role.id}
+                key={service.id}
                 style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
-                onPress={() => setSelected(role.id)}
+                onPress={() => setSelected(service.id)}
                 activeOpacity={1}
               >
-                <Text style={isSelected ? styles.selectedText : styles.text}>{t(role.label)}</Text>
+                <Text style={isSelected ? styles.selectedText : styles.text}>{t(service.label)}</Text>
               </AnimatedTouchable>
             );
           })}
@@ -95,7 +91,7 @@ const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ onNext }) => {
   );
 };
 
-export default UserTypeSelection;
+export default ServiceSelection;
 
 const styles = StyleSheet.create({
   container: {
@@ -114,16 +110,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 48,
     fontWeight: '700',
-    marginBottom: 100,
+    marginBottom: 80,
+    paddingHorizontal: 24,
   },
-  cardContainer: {
+  cardGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 15,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 20,
-    padding: 25,
+    padding: 20,
     backgroundColor: '#49454F',
     borderWidth: 2,
     borderColor: '#49454F',
@@ -140,16 +141,18 @@ const styles = StyleSheet.create({
     borderColor: '#D5FF5F',
   },
   text: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#D5FF5F',
     textAlign: 'center',
+    lineHeight: 22,
   },
   selectedText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000',
     textAlign: 'center',
+    lineHeight: 22,
   },
   button: {
     flexDirection: 'row',

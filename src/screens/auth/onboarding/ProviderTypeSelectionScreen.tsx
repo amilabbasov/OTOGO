@@ -7,45 +7,36 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
-import type { AuthScreenProps } from '../../../navigations/types';
-import { Routes } from '../../../navigations/routes';
 
 const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 
-const roles = [
-  { id: 'provider', label: 'I want to provide services' },
-  { id: 'driver', label: 'I want to receive services' },
+const providerTypes = [
+  { id: 'corporate', label: 'Corporate provider' },
+  { id: 'sole', label: 'Sole provider' },
 ];
 
 const CARD_WIDTH = 160;
 const CARD_HEIGHT = 200;
 
-interface UserTypeSelectionProps {
-  onNext: (userType: string) => void;
+interface ProviderTypeSelectionProps {
+  onNext: (providerType: string) => void;
 }
 
-const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ onNext }) => {
+const ProviderTypeSelection: React.FC<ProviderTypeSelectionProps> = ({ onNext }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  const handleContinue = () => {
-    if (selected) {
-      onNext(selected);
-    }
-  };
-
-  const getSharedStyles = (roleId: string, isSelected: boolean) => {
+  const getSharedStyles = (typeId: string, isSelected: boolean) => {
     const scale = useSharedValue(isSelected ? 1.1 : 1);
     const translateY = useSharedValue(isSelected ? -20 : 0);
-    const rotate = useSharedValue(roleId === 'provider' ? -15 : 15);
+    const rotate = useSharedValue(typeId === 'corporate' ? -15 : 15);
     const zIndex = isSelected ? 2 : 1;
     const elevation = isSelected ? 12 : 4;
 
     React.useEffect(() => {
       scale.value = withSpring(isSelected ? 1.1 : 1);
       translateY.value = withSpring(isSelected ? -20 : 0);
-      rotate.value = withSpring(isSelected ? 0 : (roleId === 'provider' ? -15 : 15));
+      rotate.value = withSpring(isSelected ? 0 : (typeId === 'corporate' ? -15 : 15));
     }, [isSelected]);
 
     const style = useAnimatedStyle(() => ({
@@ -61,23 +52,29 @@ const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ onNext }) => {
     return style;
   };
 
+  const handleContinue = () => {
+    if (selected) {
+      onNext(selected);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.centeredGroup}>
-        <Text style={styles.title}>{t('Why are you using Otogo?')}</Text>
+        <Text style={styles.title}>{t('Which describes you the best?')}</Text>
         <View style={styles.cardContainer}>
-          {roles.map(role => {
-            const isSelected = selected === role.id;
-            const animatedStyle = getSharedStyles(role.id, isSelected);
+          {providerTypes.map(type => {
+            const isSelected = selected === type.id;
+            const animatedStyle = getSharedStyles(type.id, isSelected);
 
             return (
               <AnimatedTouchable
-                key={role.id}
+                key={type.id}
                 style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
-                onPress={() => setSelected(role.id)}
+                onPress={() => setSelected(type.id)}
                 activeOpacity={1}
               >
-                <Text style={isSelected ? styles.selectedText : styles.text}>{t(role.label)}</Text>
+                <Text style={isSelected ? styles.selectedText : styles.text}>{t(type.label)}</Text>
               </AnimatedTouchable>
             );
           })}
@@ -88,14 +85,14 @@ const UserTypeSelection: React.FC<UserTypeSelectionProps> = ({ onNext }) => {
         disabled={!selected}
         onPress={handleContinue}
       >
-        <Text style={styles.buttonText}>{t('Get Started')}</Text>
+        <Text style={styles.buttonText}>{t('Continue')}</Text>
         <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
       </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
-export default UserTypeSelection;
+export default ProviderTypeSelection;
 
 const styles = StyleSheet.create({
   container: {
@@ -118,6 +115,7 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     flexDirection: 'row',
+    gap: 20,
   },
   card: {
     width: CARD_WIDTH,

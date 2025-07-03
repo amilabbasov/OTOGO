@@ -89,7 +89,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
 
                 <TouchableOpacity
                   style={styles.signInButton}
-                  onPress={() => navigation.navigate(Routes.login)}
+                  onPress={() => navigation.goBack()}
                 >
                   <Text style={styles.signInButtonText}>{t('Sign In')}</Text>
                   <SvgImage

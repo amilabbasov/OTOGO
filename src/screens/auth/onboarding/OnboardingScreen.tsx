@@ -9,9 +9,17 @@ import {
 } from 'react-native';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { Routes } from '../../../navigations/routes';
+import type { AuthScreenProps } from '../../../navigations/types';
 
 const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
     const { t } = useTranslation();
+    const navigation = useNavigation<AuthScreenProps<Routes.onboardingPager>['navigation']>();
+
+    const handleSignIn = () => {
+        navigation.goBack();
+    };
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.phoneMockup}>
@@ -51,13 +59,22 @@ const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
                 </Text>
             </View>
 
-            <TouchableOpacity
-                style={styles.button}
-                onPress={onNext}
-            >
-                <Text style={styles.buttonText}>{t('Continue')}</Text>
-                <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                    style={styles.signInButton}
+                    onPress={handleSignIn}
+                >
+                    <Text style={styles.signInButtonText}>{t('Sign In')}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.continueButton}
+                    onPress={onNext}
+                >
+                    <Text style={styles.continueButtonText}>{t('Get Started')}</Text>
+                    <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
+                </TouchableOpacity>
+            </View>
         </SafeAreaView>
     );
 };
@@ -140,6 +157,43 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         fontSize: 18,
+        fontWeight: '600',
+        marginRight: 8,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        gap: 12,
+        marginHorizontal: 24,
+        marginTop: 'auto',
+        marginBottom: 20,
+    },
+    signInButton: {
+        flex: 1,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        borderRadius: 16,
+        paddingVertical: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    signInButtonText: {
+        color: '#111',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    continueButton: {
+        flex: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#111',
+        borderRadius: 16,
+        paddingVertical: 15,
+        justifyContent: 'center',
+    },
+    continueButtonText: {
+        color: '#fff',
+        fontSize: 16,
         fontWeight: '600',
         marginRight: 8,
     },
