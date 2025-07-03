@@ -254,9 +254,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         const endpoint = userType === 'driver' ? '/api/drivers/auth/resend-code' : '/api/company-providers/auth/resend-code';
         console.log('Resend OTP request:', { endpoint, email, userType });
-        
+
         const response = await axiosInstance.post(endpoint, { email });
-        
+
         console.log('Resend OTP response:', response.status, response.data);
 
         set({ isLoading: false });

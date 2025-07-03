@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
@@ -17,6 +16,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { useAuthStore } from '../../../stores/auth/authStore';
+import { colors } from '../../../theme/color';
+import { SvgImage } from '../../../components/svgImage/SvgImage';
 
 const PersonalInfoScreen = () => {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ const PersonalInfoScreen = () => {
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
 
   const handleContinue = async () => {
     if (!firstName.trim()) {
@@ -40,12 +41,12 @@ const PersonalInfoScreen = () => {
       return;
     }
     
-    if (!phone.trim()) {
-      Alert.alert(t('Error'), t('Please enter your phone number'));
+    if (!dateOfBirth.trim()) {
+      Alert.alert(t('Error'), t('Please enter your date of birth'));
       return;
     }
 
-    const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType);
+    const result = await completeProfile(email, firstName.trim(), lastName.trim(), '1234567890', userType);
     
     if (result.success) {
       Alert.alert(
@@ -55,8 +56,6 @@ const PersonalInfoScreen = () => {
           {
             text: t('OK'),
             onPress: () => {
-              // User is now fully authenticated and will be redirected to main app
-              // The Router component will handle this automatically
             }
           }
         ]
@@ -70,83 +69,99 @@ const PersonalInfoScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.container}>
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
-          >
-            <View style={styles.innerContent}>
-              <View style={styles.header}>
-                <Text style={styles.title}>{t('Personal')}</Text>
-                <Text style={styles.title}>{t('Information')}</Text>
-                <Text style={styles.subtitle}>
-                  {t('Please provide your personal information to complete your profile.')}
-                </Text>
-              </View>
+          <View style={styles.innerContent}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Your</Text>
+              <Text style={styles.title}>Information</Text>
+              <Text style={styles.subtitle}>
+                Please fill in your identity correctly
+              </Text>
+            </View>
 
-              <View style={styles.form}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{t('First Name')}</Text>
+            <View style={styles.form}>
+              <View style={styles.nameRow}>
+                <View style={styles.nameInputGroup}>
+                  <Text style={styles.label}>First name</Text>
                   <TextInput
                     style={styles.input}
                     value={firstName}
                     onChangeText={setFirstName}
-                    placeholder={t('Enter your first name')}
-                    placeholderTextColor="#9CA3AF"
+                    placeholder="Name"
+                    placeholderTextColor="#C6C6C6"
                     autoCapitalize="words"
                     autoComplete="given-name"
                   />
                 </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{t('Last Name')}</Text>
+                
+                <View style={styles.nameInputGroup}>
+                  <Text style={styles.label}>Last name</Text>
                   <TextInput
                     style={styles.input}
                     value={lastName}
                     onChangeText={setLastName}
-                    placeholder={t('Enter your last name')}
-                    placeholderTextColor="#9CA3AF"
+                    placeholder="Surname"
+                    placeholderTextColor="#C6C6C6"
                     autoCapitalize="words"
                     autoComplete="family-name"
                   />
                 </View>
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{t('Phone Number')}</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-mail*</Text>
+                <View style={styles.inputContainer}>
+                  <SvgImage
+                    source={require('../../../assets/svg/personalInfo/email.svg')}
+                    width={20}
+                    height={20}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
-                    style={styles.input}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder={t('Enter your phone number')}
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="phone-pad"
-                    autoComplete="tel"
+                    style={[styles.input, styles.inputWithIcon]}
+                    value={email}
+                    placeholder="Enter your email"
+                    placeholderTextColor="#C6C6C6"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={false}
                   />
                 </View>
               </View>
 
-              <View style={{ flex: 1 }} />
-
-              <TouchableOpacity 
-                style={[styles.continueButton, isLoading && styles.continueButtonDisabled]} 
-                onPress={handleContinue} 
-                activeOpacity={0.8}
-                disabled={isLoading}
-              >
-                <Text style={styles.continueButtonText}>
-                  {isLoading ? t('Saving...') : t('Continue')}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={() => navigation.goBack()}
-                disabled={isLoading}
-              >
-                <Text style={styles.backButtonText}>{t('Back')}</Text>
-              </TouchableOpacity>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Date of birth</Text>
+                <View style={styles.inputContainer}>
+                  <SvgImage
+                    source={require('../../../assets/svg/personalInfo/calendar.svg')}
+                    width={20}
+                    height={20}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.inputWithIcon]}
+                    value={dateOfBirth}
+                    onChangeText={setDateOfBirth}
+                    placeholder="Birthday"
+                    placeholderTextColor="#C6C6C6"
+                  />
+                </View>
+              </View>
             </View>
-          </KeyboardAvoidingView>
+
+            <View style={{ flex: 1 }} />
+
+            <TouchableOpacity 
+              style={[styles.continueButton, isLoading && styles.continueButtonDisabled]} 
+              onPress={handleContinue} 
+              activeOpacity={0.8}
+              disabled={isLoading}
+            >
+              <Text style={styles.continueButtonText}>
+                {isLoading ? 'Saving...' : 'Continue'}
+              </Text>
+              <Text style={styles.continueButtonArrow}>→</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </TouchableWithoutFeedback>
     </SafeAreaView>
@@ -160,7 +175,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 30,
     paddingTop: 20,
   },
   innerContent: {
@@ -168,72 +183,93 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 40,
+    marginTop: 20,
   },
   title: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#111',
+    color: '#000',
     marginBottom: 0,
-    lineHeight: 40,
+    lineHeight: 38,
   },
   subtitle: {
     fontSize: 14,
-    color: '#888',
+    color: '#14151A',
     marginTop: 16,
-    marginBottom: 32,
     fontWeight: '400',
-    lineHeight: 21,
+    lineHeight: 24,
   },
   form: {
-    gap: 20,
+    gap: 24,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 20,
+  },
+  nameInputGroup: {
+    flex: 1,
+    gap: 8,
   },
   inputGroup: {
     gap: 8,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#14151A',
+  },
+  inputContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#DFDFDF',
     borderRadius: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     fontSize: 16,
-    color: '#111',
-    backgroundColor: '#fff',
+    color: '#000',
+    backgroundColor: '#FAFAFA',
+    flex: 1,
+    minHeight: 50,
+  },
+  inputWithIcon: {
+    paddingLeft: 50,
+    paddingRight: 20,
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 1,
   },
   continueButton: {
-    backgroundColor: '#D5FF5F',
-    borderRadius: 14,
-    paddingVertical: 16,
+    backgroundColor: '#000',
+    borderRadius: 16,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
   },
   continueButtonDisabled: {
     opacity: 0.5,
+    backgroundColor: '#B3B3B3',
+    color: '#fff',
   },
   continueButtonText: {
-    color: '#000',
-    fontSize: 14,
+    color: colors.primary,
+    fontSize: 16,
     fontWeight: '500',
   },
-  backButton: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 14,
-  },
-  backButtonText: {
-    color: '#111',
-    fontSize: 14,
-    fontWeight: '500',
+  continueButtonArrow: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
