@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
-import OnboardingScreen from './OnboardingScreen';
-import UserTypeSelection from './UserTypeSelectionScreen';
-import ProviderTypeSelection from './ProviderTypeSelectionScreen';
-import ServiceSelection from './ServiceSelectionScreen';
+import OnboardingScreen from '../onboarding/flow/OnboardingScreen';
+import UserTypeSelection from './flow/UserTypeSelectionScreen';
+import ProviderTypeSelection from './flow/ProviderTypeSelectionScreen';
+import ServiceSelection from '../onboarding/flow/ServiceSelectionScreen';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 
 const { width: screenWidth } = Dimensions.get('window');

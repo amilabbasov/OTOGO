@@ -27,6 +27,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const route = useRoute<RegisterScreenProps['route']>();
   const { userType } = route.params;
   const { signup, isLoading } = useAuthStore();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rePassword, setRePassword] = useState('');
@@ -34,10 +35,74 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const [showRePassword, setShowRePassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [rePasswordError, setRePasswordError] = useState('');
 
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
-  const rePasswordInputRef = useRef<TextInput>(null);  const handleSignUp = async () => {
+  const rePasswordInputRef = useRef<TextInput>(null);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError('');
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError(t('Email is invalid'));
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordError('');
+      return false;
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setPasswordError(t('Password must be minimum 8 characters long and contain letters A-Z, a-z, numbers and at least one special character.'));
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
+
+  const validateRePassword = (rePassword: string) => {
+    if (!rePassword) {
+      setRePasswordError('');
+      return false;
+    }
+    if (password !== rePassword) {
+      setRePasswordError(t('Passwords do not match.'));
+      return false;
+    }
+    setRePasswordError('');
+    return true;
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    validateEmail(text);
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    validatePassword(text);
+    if (rePassword) {
+      validateRePassword(rePassword);
+    }
+  };
+
+  const handleRePasswordChange = (text: string) => {
+    setRePassword(text);
+    validateRePassword(text);
+  };
+
+  const handleSignUp = async () => {
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -46,26 +111,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
       return;
     }
 
+    // Validate all fields
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+    const isRePasswordValid = validateRePassword(rePassword);
+
     if (!email || !password || !rePassword) {
       setErrorMessage(t('Please fill in all fields.'));
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setErrorMessage(t('Please enter a valid email address.'));
-      return;
-    }
-
-    // Password validation
-    if (password.length < 6) {
-      setErrorMessage(t('Password must be at least 6 characters long.'));
-      return;
-    }
-
-    // Password match validation
-    if (password !== rePassword) {
-      setErrorMessage(t('Passwords do not match.'));
+    if (!isEmailValid || !isPasswordValid || !isRePasswordValid) {
+      setErrorMessage(t('Please fix the errors above.'));
       return;
     }
 
@@ -74,16 +131,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
 
       if (result.success) {
         setSuccessMessage(t('Registration successful! Please check your email for the OTP code.'));
-        
-        // Navigate to OTP screen after a short delay
         setTimeout(() => {
           navigation.navigate(Routes.otp, { email, userType });
-        }, 1500);
+        }, 1000);
       } else {
         setErrorMessage(result.message || t('Registration failed. Please try again.'));
       }
-    } catch (error) {
-      console.error('Registration error:', error);
+    } catch (error: any) {
       setErrorMessage(t('An unexpected error occurred. Please try again.'));
     }
   };
@@ -119,7 +173,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
               <View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('Email')}</Text>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer, emailError && styles.inputContainerError]}>
                     <SvgImage
                       source={require('../../../assets/svg/auth/phone-icon.svg')}
                       width={20}
@@ -134,16 +188,19 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       keyboardType="email-address"
                       autoCapitalize="none"
                       value={email}
-                      onChangeText={setEmail}
+                      onChangeText={handleEmailChange}
                       returnKeyType="next"
                       onSubmitEditing={() => passwordInputRef.current?.focus()}
                     />
                   </View>
+                  {emailError ? (
+                    <Text style={styles.fieldErrorText}>{emailError}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('Password')}</Text>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer, passwordError && styles.inputContainerError]}>
                     <SvgImage
                       source={require('../../../assets/svg/auth/lock-icon.svg')}
                       width={20}
@@ -157,7 +214,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       placeholder={t('Enter your password')}
                       secureTextEntry={!showPassword}
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={handlePasswordChange}
                       returnKeyType="next"
                       onSubmitEditing={() => rePasswordInputRef.current?.focus()}
                     />
@@ -174,11 +231,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       />
                     </TouchableOpacity>
                   </View>
+                  {passwordError ? (
+                    <Text style={styles.fieldErrorText}>{passwordError}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('Re-Password')}</Text>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer, rePasswordError && styles.inputContainerError]}>
                     <SvgImage
                       source={require('../../../assets/svg/auth/lock-icon.svg')}
                       width={20}
@@ -192,7 +252,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       placeholder={t('Enter your password')}
                       secureTextEntry={!showRePassword}
                       value={rePassword}
-                      onChangeText={setRePassword}
+                      onChangeText={handleRePasswordChange}
                       returnKeyType="done"
                       onSubmitEditing={handleSignUp}
                     />
@@ -209,16 +269,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       />
                     </TouchableOpacity>
                   </View>
+                  {rePasswordError ? (
+                    <Text style={styles.fieldErrorText}>{rePasswordError}</Text>
+                  ) : null}
                 </View>
 
-                {/* Xəta mesajı */}
                 {errorMessage ? (
                   <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>{errorMessage}</Text>
                   </View>
                 ) : null}
 
-                {/* Uğur mesajı */}
                 {successMessage ? (
                   <View style={styles.successContainer}>
                     <Text style={styles.successText}>{successMessage}</Text>
@@ -328,6 +389,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
+  inputContainerError: {
+    borderColor: '#FF4444',
+  },
   inputIcon: {
     marginRight: 12,
   },
@@ -340,6 +404,12 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     paddingLeft: 12,
+  },
+  fieldErrorText: {
+    color: '#FF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   errorContainer: {
     backgroundColor: '#FFE6E6',

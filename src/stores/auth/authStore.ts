@@ -233,8 +233,6 @@ export const useAuthStore = create<AuthState>((set, get) => {
         set({ isLoading: false });
 
         if (response.status === 200) {
-          // Instead of logging the user in immediately, 
-          // return success and indicate that profile completion is required
           return { success: true, requiresProfile: true };
         } else {
           const errorMessage = response.data?.message || response.data?.error || 'OTP verification failed';
@@ -254,13 +252,17 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ isLoading: true });
 
       try {
-        const endpoint = userType === 'driver' ? '/api/drivers/resend-otp' : '/api/providers/resend-otp';
+        const endpoint = userType === 'driver' ? '/api/drivers/auth/resend-code' : '/api/company-providers/auth/resend-code';
+        console.log('Resend OTP request:', { endpoint, email, userType });
+        
         const response = await axiosInstance.post(endpoint, { email });
+        
+        console.log('Resend OTP response:', response.status, response.data);
 
         set({ isLoading: false });
 
         if (response.status === 200) {
-          return { success: true, message: 'OTP code resent successfully' };
+          return { success: true, message: response.data?.message || 'OTP code resent successfully' };
         } else {
           const errorMessage = response.data?.message || response.data?.error || 'Failed to resend OTP';
           return { success: false, message: errorMessage };

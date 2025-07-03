@@ -7,11 +7,11 @@ import {
     SafeAreaView,
     Image,
 } from 'react-native';
-import { SvgImage } from '../../../components/svgImage/SvgImage';
+import { SvgImage } from '../../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
-import { Routes } from '../../../navigations/routes';
-import type { AuthScreenProps } from '../../../navigations/types';
+import { Routes } from '../../../../navigations/routes';
+import type { AuthScreenProps } from '../../../../navigations/types';
 
 const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
     const { t } = useTranslation();
@@ -24,13 +24,13 @@ const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
         <SafeAreaView style={styles.container}>
             <View style={styles.phoneMockup}>
                 <Image
-                    source={require('../../../assets/images/onboarding/mockup.png')}
+                    source={require('../../../../assets/images/onboarding/mockup.png')}
                     style={styles.mockupImage}
                     resizeMode="contain"
                 />
                 <View style={styles.notificationsContainer}>
                     <View style={styles.notification}>
-                        <SvgImage source={require('../../../assets/svg/onboarding/bitmoji-1.svg')} width={36} height={36} style={styles.avatar} />
+                        <SvgImage source={require('../../../../assets/svg/onboarding/bitmoji-1.svg')} width={36} height={36} style={styles.avatar} />
                         <View style={{ flex: 1 }}>
                             <Text style={styles.notifName}>{t('Mehriban')}</Text>
                             <Text style={styles.notifMsg}>
@@ -40,7 +40,7 @@ const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
                         <Text style={styles.notifTime}>{t('now')}</Text>
                     </View>
                     <View style={styles.notification}>
-                        <SvgImage source={require('../../../assets/svg/onboarding/bitmoji-2.svg')} width={36} height={36} style={styles.avatar} />
+                        <SvgImage source={require('../../../../assets/svg/onboarding/bitmoji-2.svg')} width={36} height={36} style={styles.avatar} />
                         <View style={{ flex: 1 }}>
                             <Text style={styles.notifName}>{t('Adrian')}</Text>
                             <Text style={styles.notifMsg}>
@@ -72,7 +72,7 @@ const OnboardingScreen = ({ onNext }: { onNext: () => void }) => {
                     onPress={onNext}
                 >
                     <Text style={styles.continueButtonText}>{t('Get Started')}</Text>
-                    <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
+                    <SvgImage source={require('../../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

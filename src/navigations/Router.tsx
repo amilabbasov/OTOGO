@@ -17,7 +17,7 @@ const Router = () => {
   const [authState, setAuthState] = useState({
     token: null as string | null,
     userType: null as 'driver' | 'provider' | null,
-    isLoading: true
+    isAppReady: false 
   });
 
   const checkToken = useAuthStore(state => state.checkToken);
@@ -28,16 +28,15 @@ const Router = () => {
     setAuthState({
       token: currentState.token,
       userType: currentState.userType,
-      isLoading: currentState.isLoading
+      isAppReady: false
     });
 
-    // Subscribe to auth store changes manually
     const unsubscribe = useAuthStore.subscribe((state) => {
-      setAuthState({
+      setAuthState(prevAuthState => ({
+        ...prevAuthState, 
         token: state.token,
         userType: state.userType,
-        isLoading: state.isLoading
-      });
+      }));
     });
 
     return unsubscribe;
@@ -46,6 +45,7 @@ const Router = () => {
   useEffect(() => {
     const init = async () => {
       await checkToken();
+      setAuthState(prevAuthState => ({ ...prevAuthState, isAppReady: true }));
     };
     init();
   }, [checkToken]);
@@ -59,10 +59,10 @@ const Router = () => {
     return () => subscription.remove();
   }, [clearAuth]);
 
-  if (authState.isLoading) {
+  if (!authState.isAppReady) { 
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
@@ -97,6 +97,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff', // Fon rəngi əlavə etdim
   },
 });
 

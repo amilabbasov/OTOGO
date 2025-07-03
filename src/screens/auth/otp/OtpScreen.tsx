@@ -30,26 +30,8 @@ const OtpScreen = () => {
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
+  const [otpError, setOtpError] = useState('');
   const inputRefs = useRef<(TextInput | null)[]>([]);
-
-  // Add debug logging for OTP screen mount/focus
-  useEffect(() => {
-    console.log('OTP Screen mounted with params:', { email, userType });
-    
-    const unsubscribeFocus = navigation.addListener('focus', () => {
-      console.log('OTP Screen focused');
-    });
-    
-    const unsubscribeBlur = navigation.addListener('blur', () => {
-      console.log('OTP Screen blurred');
-    });
-
-    return () => {
-      unsubscribeFocus();
-      unsubscribeBlur();
-      console.log('OTP Screen unmounted');
-    };
-  }, [navigation, email, userType]);
 
   useEffect(() => {
     if (timer === 0) {
@@ -68,6 +50,12 @@ const OtpScreen = () => {
     const newOtp = [...otp];
     newOtp[idx] = value;
     setOtp(newOtp);
+    
+    // Clear error when user starts typing
+    if (otpError) {
+      setOtpError('');
+    }
+    
     if (value && idx < OTP_LENGTH - 1) {
       inputRefs.current[idx + 1]?.focus();
     }
@@ -78,36 +66,64 @@ const OtpScreen = () => {
 
   const handleResend = async () => {
     if (!isResendDisabled) {
-      const result = await resendOTP(email, userType);
-      if (result.success) {
-        setTimer(RESEND_TIME);
-        Alert.alert(t('Success'), result.message || t('OTP code resent successfully'));
-      } else {
-        Alert.alert(t('Error'), result.message || t('Failed to resend OTP code'));
+      setOtpError('');
+      
+      try {
+        const result = await resendOTP(email, userType);
+        if (result.success) {
+          setTimer(RESEND_TIME);
+          Alert.alert(t('Success'), result.message || t('OTP code resent successfully'));
+        } else {
+          setOtpError(result.message || t('Failed to resend OTP code'));
+        }
+      } catch (error: any) {
+        console.error('Resend OTP error:', error);
+        setOtpError(t('Failed to resend OTP code. Please try again.'));
       }
     }
   };
 
   const handleVerify = async () => {
     const otpCode = otp.join('');
-    
+    setOtpError('');
+
     if (otpCode.length !== OTP_LENGTH) {
-      Alert.alert(t('Error'), t('Please enter the complete OTP code'));
+      setOtpError(t('Please enter the complete OTP code'));
       return;
     }
 
-    const result = await verifyOTP(email, otpCode, userType);
-    
-    if (result.success) {
-      if (result.requiresProfile) {
-        // Navigate to personal information screen
-        navigation.navigate(Routes.personalInfo, { email, userType });
+    try {
+      const result = await verifyOTP(email, otpCode, userType);
+
+      if (result.success) {
+        if (result.requiresProfile) {
+          navigation.navigate(Routes.personalInfo, { email, userType });
+        } else {
+          Alert.alert(t('Success'), t('OTP verified successfully'));
+        }
       } else {
-        // User is fully authenticated (shouldn't happen with new flow)
-        Alert.alert(t('Success'), t('OTP verified successfully'));
+        const errorMessage = result.message || t('OTP code is wrong.');
+        
+        if (errorMessage.toLowerCase().includes('invalid') || 
+            errorMessage.toLowerCase().includes('wrong') || 
+            errorMessage.toLowerCase().includes('incorrect') ||
+            errorMessage.toLowerCase().includes('expired') ||
+            errorMessage.includes('400')) {
+          setOtpError(t('OTP code is wrong.'));
+        } else {
+          setOtpError(errorMessage);
+        }
       }
-    } else {
-      Alert.alert(t('Error'), result.message || t('OTP verification failed'));
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      
+      if (error.response?.status === 400) {
+        setOtpError(t('OTP code is wrong.'));
+      } else if (error.message) {
+        setOtpError(error.message);
+      } else {
+        setOtpError(t('An error occurred. Please try again.'));
+      }
     }
   };
 
@@ -140,7 +156,7 @@ const OtpScreen = () => {
                     style={[
                       styles.otpInput,
                       digit ? styles.otpInputFilled : null,
-                      inputRefs.current[idx]?.isFocused?.() ? styles.otpInputFocused : null,
+                      otpError ? styles.otpInputError : null,
                     ]}
                     keyboardType="number-pad"
                     maxLength={1}
@@ -154,6 +170,9 @@ const OtpScreen = () => {
                   />
                 ))}
               </View>
+              {otpError ? (
+                <Text style={styles.otpErrorText}>{otpError}</Text>
+              ) : null}
               <Text style={styles.didntGetText}>{t("Didn't get the code?")}</Text>
               <TouchableOpacity
                 style={[styles.resendButton, isResendDisabled && styles.resendButtonDisabled]}
@@ -165,9 +184,9 @@ const OtpScreen = () => {
                 </Text>
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
-              <TouchableOpacity 
-                style={[styles.verifyButton, isLoading && styles.verifyButtonDisabled]} 
-                onPress={handleVerify} 
+              <TouchableOpacity
+                style={[styles.verifyButton, isLoading && styles.verifyButtonDisabled]}
+                onPress={handleVerify}
                 activeOpacity={0.8}
                 disabled={isLoading}
               >
@@ -175,7 +194,7 @@ const OtpScreen = () => {
                   {isLoading ? t('Verifying...') : t('Verify')}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.backButton} onPress={() => { navigation.goBack() }}>
+              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Text style={styles.backButtonText}>{t('Back')}</Text>
               </TouchableOpacity>
             </View>
@@ -241,6 +260,16 @@ const styles = StyleSheet.create({
   },
   otpInputFilled: {
     borderColor: '#36F88D',
+  },
+  otpInputError: {
+    borderColor: '#FF4444',
+  },
+  otpErrorText: {
+    color: '#FF4444',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: -20,
+    marginBottom: 20,
   },
   didntGetText: {
     textAlign: 'center',

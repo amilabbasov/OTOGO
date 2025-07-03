@@ -5,44 +5,45 @@ import Reanimated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { SvgImage } from '../../../components/svgImage/SvgImage';
+import { SvgImage } from '../../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
 
 const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 
-const services = [
-  { id: 'automotive-service', label: 'Automotive Service' },
-  { id: 'automotive-store', label: 'Automotive Store' },
-  { id: 'evacuator', label: 'Evacuator' },
-  { id: 'sober-driver', label: 'Sober Driver' },
+const providerTypes = [
+  { id: 'corporate', label: 'Corporate provider' },
+  { id: 'sole', label: 'Sole provider' },
 ];
 
-const CARD_WIDTH = 140;
-const CARD_HEIGHT = 160;
+const CARD_WIDTH = 160;
+const CARD_HEIGHT = 200;
 
-interface ServiceSelectionProps {
-  onNext: (service: string) => void;
+interface ProviderTypeSelectionProps {
+  onNext: (providerType: string) => void;
 }
 
-const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext }) => {
+const ProviderTypeSelection: React.FC<ProviderTypeSelectionProps> = ({ onNext }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  const getSharedStyles = (serviceId: string, isSelected: boolean) => {
-    const scale = useSharedValue(isSelected ? 1.05 : 1);
-    const translateY = useSharedValue(isSelected ? -10 : 0);
+  const getSharedStyles = (typeId: string, isSelected: boolean) => {
+    const scale = useSharedValue(isSelected ? 1.1 : 1);
+    const translateY = useSharedValue(isSelected ? -20 : 0);
+    const rotate = useSharedValue(typeId === 'corporate' ? -15 : 15);
     const zIndex = isSelected ? 2 : 1;
     const elevation = isSelected ? 12 : 4;
 
     React.useEffect(() => {
-      scale.value = withSpring(isSelected ? 1.05 : 1);
-      translateY.value = withSpring(isSelected ? -10 : 0);
+      scale.value = withSpring(isSelected ? 1.1 : 1);
+      translateY.value = withSpring(isSelected ? -20 : 0);
+      rotate.value = withSpring(isSelected ? 0 : (typeId === 'corporate' ? -15 : 15));
     }, [isSelected]);
 
     const style = useAnimatedStyle(() => ({
       transform: [
         { scale: scale.value },
         { translateY: translateY.value },
+        { rotate: `${rotate.value}deg` }
       ],
       zIndex,
       elevation,
@@ -60,20 +61,20 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.centeredGroup}>
-        <Text style={styles.title}>{t('What services do you offer?')}</Text>
-        <View style={styles.cardGrid}>
-          {services.map(service => {
-            const isSelected = selected === service.id;
-            const animatedStyle = getSharedStyles(service.id, isSelected);
+        <Text style={styles.title}>{t('Which describes you the best?')}</Text>
+        <View style={styles.cardContainer}>
+          {providerTypes.map(type => {
+            const isSelected = selected === type.id;
+            const animatedStyle = getSharedStyles(type.id, isSelected);
 
             return (
               <AnimatedTouchable
-                key={service.id}
+                key={type.id}
                 style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
-                onPress={() => setSelected(service.id)}
+                onPress={() => setSelected(type.id)}
                 activeOpacity={1}
               >
-                <Text style={isSelected ? styles.selectedText : styles.text}>{t(service.label)}</Text>
+                <Text style={isSelected ? styles.selectedText : styles.text}>{t(type.label)}</Text>
               </AnimatedTouchable>
             );
           })}
@@ -84,14 +85,14 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext }) => {
         disabled={!selected}
         onPress={handleContinue}
       >
-        <Text style={styles.buttonText}>{t('Get Started')}</Text>
-        <SvgImage source={require('../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
+        <Text style={styles.buttonText}>{t('Next')}</Text>
+        <SvgImage source={require('../../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
       </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
-export default ServiceSelection;
+export default ProviderTypeSelection;
 
 const styles = StyleSheet.create({
   container: {
@@ -108,23 +109,20 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     textAlign: 'center',
+    paddingHorizontal: 24,
     lineHeight: 48,
     fontWeight: '700',
-    marginBottom: 80,
-    paddingHorizontal: 24,
+    marginBottom: 100,
   },
-  cardGrid: {
+  cardContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 15,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    gap: 20,
   },
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 20,
-    padding: 20,
+    padding: 25,
     backgroundColor: '#49454F',
     borderWidth: 2,
     borderColor: '#49454F',
@@ -141,18 +139,16 @@ const styles = StyleSheet.create({
     borderColor: '#D5FF5F',
   },
   text: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
     color: '#D5FF5F',
     textAlign: 'center',
-    lineHeight: 22,
   },
   selectedText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
     color: '#000',
     textAlign: 'center',
-    lineHeight: 22,
   },
   button: {
     flexDirection: 'row',
