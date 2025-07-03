@@ -12,6 +12,7 @@ export enum Routes {
     register = 'register',
     forgotPassword = 'forgotPassword',
     otp = 'otp',
+    resetPassword = 'resetPassword',
     personalInfo = 'personalInfo',
     
     // Driver routes

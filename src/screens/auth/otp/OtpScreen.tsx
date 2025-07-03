@@ -25,8 +25,8 @@ const OtpScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<AuthScreenProps<Routes.otp>['navigation']>();
   const route = useRoute<AuthScreenProps<Routes.otp>['route']>();
-  const { email, userType } = route.params;
-  const { verifyOTP, resendOTP, isLoading } = useAuthStore();
+  const { email, userType, isPasswordReset } = route.params;
+  const { verifyOTP, resendOTP, forgotPassword, isLoading } = useAuthStore();
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
@@ -69,7 +69,15 @@ const OtpScreen = () => {
       setOtpError('');
       
       try {
-        const result = await resendOTP(email, userType);
+        let result;
+        if (isPasswordReset) {
+          result = await forgotPassword(email);
+        } else if (userType) {
+          result = await resendOTP(email, userType);
+        } else {
+          setOtpError(t('Failed to resend OTP code'));
+          return;
+        }
         if (result.success) {
           setTimer(RESEND_TIME);
           Alert.alert(t('Success'), result.message || t('OTP code resent successfully'));
@@ -93,10 +101,22 @@ const OtpScreen = () => {
     }
 
     try {
-      const result = await verifyOTP(email, otpCode, userType);
+      let result;
+      if (isPasswordReset) {
+        // For password reset flow, we don't need userType for OTP verification
+        result = await verifyOTP(email, otpCode, 'driver'); // Use default userType for password reset
+      } else if (userType) {
+        result = await verifyOTP(email, otpCode, userType);
+      } else {
+        setOtpError(t('An error occurred. Please try again.'));
+        return;
+      }
 
       if (result.success) {
-        if (result.requiresProfile) {
+        if (isPasswordReset) {
+          // For password reset flow, navigate to reset password screen
+          navigation.navigate(Routes.resetPassword, { email, token: otpCode });
+        } else if (result.requiresProfile && userType) {
           navigation.navigate(Routes.personalInfo, { email, userType });
         } else {
           Alert.alert(t('Success'), t('OTP verified successfully'));

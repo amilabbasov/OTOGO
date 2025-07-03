@@ -4,6 +4,7 @@ import LoginScreen from '../screens/auth/login/LoginScreen';
 import RegisterScreen from '../screens/auth/register/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/forgot/ForgotPasswordScreen';
 import OtpScreen from '../screens/auth/otp/OtpScreen';
+import ResetPasswordScreen from '../screens/auth/resetPassword/ResetPasswordScreen';
 import PersonalInfoScreen from '../screens/auth/personalInfo/PersonalInfoScreen';
 import OnboardingPagerScreen from '../screens/auth/onboarding/OnboardingPagerScreen';
 import { Routes } from './routes';
@@ -21,6 +22,7 @@ export const AuthRouter = () => {
       <AuthStack.Screen name={Routes.register} component={RegisterScreen} />
       <AuthStack.Screen name={Routes.forgotPassword} component={ForgotPasswordScreen} />
       <AuthStack.Screen name={Routes.otp} component={OtpScreen} />
+      <AuthStack.Screen name={Routes.resetPassword} component={ResetPasswordScreen} />
       <AuthStack.Screen name={Routes.personalInfo} component={PersonalInfoScreen} />
       <AuthStack.Screen name={Routes.onboardingPager} component={OnboardingPagerScreen} />
     </AuthStack.Navigator>

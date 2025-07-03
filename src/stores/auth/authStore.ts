@@ -55,6 +55,8 @@ interface AuthState {
   resendOTP: (email: string, userType: 'driver' | 'provider') => Promise<{ success: boolean; message?: string }>;
   completeProfile: (email: string, firstName: string, lastName: string, phone: string, userType: 'driver' | 'provider') => Promise<{ success: boolean; message?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string; userType?: 'driver' | 'provider' }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message?: string }>;
+  resetPassword: (email: string, token: string, newPassword: string, repeatPassword: string) => Promise<{ success: boolean; message?: string }>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => {
@@ -252,7 +254,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ isLoading: true });
 
       try {
-        const endpoint = userType === 'driver' ? '/api/drivers/auth/resend-code' : '/api/company-providers/auth/resend-code';
+        const endpoint = userType === 'driver' ? '/api/drivers/auth/resend-code' : '/api/providers/auth/resend-code';
         console.log('Resend OTP request:', { endpoint, email, userType });
 
         const response = await axiosInstance.post(endpoint, { email });
@@ -349,6 +351,67 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
       } catch (error: any) {
         console.error('Login error:', error);
+        set({ isLoading: false });
+        return {
+          success: false,
+          message: extractErrorMessage(error)
+        };
+      }
+    },
+
+    forgotPassword: async (email: string) => {
+      set({ isLoading: true });
+
+      try {
+        const response = await axiosInstance.post('/api/passwords/reset-request', {
+          email: email.trim()
+        });
+
+        set({ isLoading: false });
+
+        if (response.status === 200) {
+          return { 
+            success: true, 
+            message: response.data?.message || 'Password reset instructions have been sent to your email address.' 
+          };
+        } else {
+          const errorMessage = response.data?.message || response.data?.error || 'Failed to send reset instructions';
+          return { success: false, message: errorMessage };
+        }
+      } catch (error: any) {
+        console.error('Forgot password error:', error);
+        set({ isLoading: false });
+        return {
+          success: false,
+          message: extractErrorMessage(error)
+        };
+      }
+    },
+
+    resetPassword: async (email: string, token: string, newPassword: string, repeatPassword: string) => {
+      set({ isLoading: true });
+
+      try {
+        const response = await axiosInstance.post('/api/passwords/reset', {
+          email: email.trim(),
+          token: token.trim(),
+          newPassword,
+          repeatPassword
+        });
+
+        set({ isLoading: false });
+
+        if (response.status === 200) {
+          return { 
+            success: true, 
+            message: response.data?.message || 'Password has been reset successfully.' 
+          };
+        } else {
+          const errorMessage = response.data?.message || response.data?.error || 'Failed to reset password';
+          return { success: false, message: errorMessage };
+        }
+      } catch (error: any) {
+        console.error('Reset password error:', error);
         set({ isLoading: false });
         return {
           success: false,

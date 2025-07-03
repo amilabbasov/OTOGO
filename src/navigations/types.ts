@@ -12,7 +12,8 @@ export type AuthStackParamList = {
   [Routes.login]: undefined;
   [Routes.register]: { userType: 'driver' | 'provider' | null };
   [Routes.forgotPassword]: undefined;
-  [Routes.otp]: { email: string; userType: 'driver' | 'provider' };
+  [Routes.otp]: { email: string; userType?: 'driver' | 'provider'; isPasswordReset?: boolean };
+  [Routes.resetPassword]: { email: string; token: string };
   [Routes.personalInfo]: { email: string; userType: 'driver' | 'provider' };
 };
 
