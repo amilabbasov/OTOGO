@@ -1,18 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  FlatList,
-  Pressable,
   Dimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SvgImage } from '../svgImage/SvgImage';
-// Import NativeMethods for the measureInWindow method type
-import type { NativeMethods } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  interpolate 
+} from 'react-native-reanimated';
 
 interface Language {
   code: string;
@@ -26,171 +27,132 @@ const languages: Language[] = [
   { code: 'ru', name: 'Russian', nativeName: 'RU' },
 ];
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 export const LanguageSelector: React.FC = () => {
   const { i18n } = useTranslation();
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   
-  const buttonRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
-
+  const animatedHeight = useSharedValue(0);
+  const chevronRotation = useSharedValue(0);
+  
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  const otherLanguages = languages.filter(lang => lang.code !== currentLanguage.code);
 
   const handleLanguageChange = async (languageCode: string) => {
     try {
       await i18n.changeLanguage(languageCode);
-      setIsDropdownVisible(false);
+      toggleDropdown();
     } catch (error) {
       console.error('Error changing language:', error);
     }
   };
 
-  const measureButton = () => {
-    // FIX 2-5: Add types for the measureInWindow callback parameters
-    buttonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-      const top = y + height + 5;
-      const left = x;
-      const calculatedWidth = width;
-
-      const rightEdge = left + calculatedWidth;
-      if (rightEdge > screenWidth - 10) {
-          setDropdownPosition({
-              top,
-              left: screenWidth - calculatedWidth - 10,
-              width: calculatedWidth,
-          });
-      } else {
-          setDropdownPosition({ top, left, width: calculatedWidth });
-      }
-    });
+  const toggleDropdown = () => {
+    const newState = !isDropdownVisible;
+    setIsDropdownVisible(newState);
+    
+    animatedHeight.value = withTiming(newState ? 1 : 0, { duration: 300 });
+    chevronRotation.value = withTiming(newState ? 180 : 0, { duration: 300 });
   };
 
-  const renderLanguageItem = ({ item }: { item: Language }) => (
-    <TouchableOpacity
-      style={[
-        styles.languageItem,
-        item.code === currentLanguage.code && styles.selectedLanguageItem
-      ]}
-      onPress={() => handleLanguageChange(item.code)}
-    >
-      <Text style={[
-        styles.languageText,
-        item.code === currentLanguage.code && styles.selectedLanguageText
-      ]}>
-        {item.nativeName}
-      </Text>
-      {item.code === currentLanguage.code && (
-        <SvgImage
-          source={require('../../assets/svg/auth/chevron-down.svg')}
-          width={16}
-          height={16}
-          color="#D5FF5F"
-        />
-      )}
-    </TouchableOpacity>
-  );
+  const animatedContainerStyle = useAnimatedStyle(() => {
+    const baseHeight = 44;
+    const itemHeight = 36;
+    const expandedHeight = baseHeight + (otherLanguages.length * itemHeight);
+    
+    return {
+      height: interpolate(
+        animatedHeight.value,
+        [0, 1],
+        [baseHeight, expandedHeight]
+      ),
+    };
+  });
+
+  const animatedChevronStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${chevronRotation.value}deg` }],
+    };
+  });
+
+  const animatedLanguagesStyle = useAnimatedStyle(() => {
+    return {
+      opacity: animatedHeight.value,
+      transform: [{ translateY: interpolate(animatedHeight.value, [0, 1], [-10, 0]) }],
+    };
+  });
 
   return (
-    <>
+    <Animated.View style={[styles.container, animatedContainerStyle]}>
       <TouchableOpacity
-        ref={buttonRef}
         style={styles.languageButton}
-        onPress={() => {
-          measureButton();
-          setIsDropdownVisible(true);
-        }}
+        onPress={toggleDropdown}
+        activeOpacity={0.7}
       >
         <Text style={styles.languageButtonText}>{currentLanguage.nativeName}</Text>
-        <SvgImage
-          source={require('../../assets/svg/auth/chevron-down.svg')}
-          width={16}
-          height={16}
-          color="#666"
-        />
+        <Animated.View style={animatedChevronStyle}>
+          <SvgImage
+            source={require('../../assets/svg/auth/chevron-down.svg')}
+            width={16}
+            height={16}
+            color="#666"
+          />
+        </Animated.View>
       </TouchableOpacity>
 
-      <Modal
-        visible={isDropdownVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsDropdownVisible(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setIsDropdownVisible(false)}
-        >
-          <View
-            style={[
-              styles.dropdown,
-              {
-                position: 'absolute',
-                top: dropdownPosition.top,
-                left: dropdownPosition.left,
-                width: dropdownPosition.width,
-              },
-            ]}
+      <Animated.View style={[styles.languagesList, animatedLanguagesStyle]} pointerEvents={isDropdownVisible ? 'auto' : 'none'}>
+        {otherLanguages.map((language) => (
+          <TouchableOpacity
+            key={language.code}
+            style={styles.languageItem}
+            onPress={() => handleLanguageChange(language.code)}
+            activeOpacity={0.7}
           >
-            <FlatList
-              data={languages}
-              renderItem={renderLanguageItem}
-              keyExtractor={(item) => item.code}
-              showsVerticalScrollIndicator={false}
-              style={{ maxHeight: screenHeight * 0.4 }}
-            />
-          </View>
-        </Pressable>
-      </Modal>
-    </>
+            <Text style={styles.languageText}>{language.nativeName}</Text>
+          </TouchableOpacity>
+        ))}
+      </Animated.View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#737373',
+    overflow: 'hidden',
+  },
   languageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 22,
-    paddingVertical: 8,
-    alignSelf: 'flex-start',
-    gap: 6,
+    justifyContent: 'space-between',
+    gap: 5,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    height: 44,
+    minWidth: 60,
   },
   languageButtonText: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: 18,
+    color: '#737373',
+    fontWeight: '300',
   },
-  modalOverlay: {
+  languagesList: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  dropdown: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
   },
   languageItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  selectedLanguageItem: {
-    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 13,
+    height: 36,
+    justifyContent: 'center',
   },
   languageText: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '400',
+    fontSize: 18,
+    color: '#737373',
+    fontWeight: '300',
   },
   selectedLanguageText: {
     color: '#059669',

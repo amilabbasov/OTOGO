@@ -36,14 +36,14 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
 
   const handleLogin = async () => {
     setErrorMessage('');
-    
+
     if (!email || !password) {
       setErrorMessage(t('Please fill in all fields.'));
       return;
     }
 
     const result = await login(email, password);
-    
+
     if (!result.success) {
       setErrorMessage(result.message || t('Login failed'));
     }
@@ -66,10 +66,9 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
               <View style={styles.header}>
                 <Text style={styles.title}>{t('Sign In')}</Text>
                 <Text style={styles.subtitle}>{t('Welcome back to your account')}</Text>
-              </View>
-
-              <View style={styles.languageSelectorContainer}>
-                <LanguageSelector />
+                <View style={styles.languageSelectorContainer}>
+                  <LanguageSelector />
+                </View>
               </View>
 
               <View>
@@ -191,7 +190,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   header: {
-    marginBottom: 0,
+    marginTop: 20,
   },
   languageSelectorContainer: {
     marginBottom: 24,
