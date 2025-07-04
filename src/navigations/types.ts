@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Routes } from './routes';
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { UserType } from '../types/common';
 
 export type RootStackParamList = {
   [Routes.auth]: NavigatorScreenParams<AuthStackParamList>;
@@ -10,14 +11,15 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
   [Routes.onboardingPager]: undefined;
   [Routes.login]: undefined;
-  [Routes.register]: { userType: 'driver' | 'provider' | null };
+  [Routes.register]: { userType: UserType | null };
   [Routes.forgotPassword]: undefined;
-  [Routes.otp]: { email: string; userType?: 'driver' | 'provider'; isPasswordReset?: boolean };
+  [Routes.otp]: { email: string; userType?: UserType; isPasswordReset?: boolean };
   [Routes.resetPassword]: { email: string; token: string };
-  [Routes.personalInfo]: { email: string; userType: 'driver' | 'provider' };
 };
 
 export type MainStackParamList = {
+  [Routes.personalInfo]: { email?: string; userType?: UserType };
+  [Routes.carSelection]: { userType: UserType };
   [Routes.driverTabs]: undefined;
   [Routes.providerTabs]: undefined;
 };

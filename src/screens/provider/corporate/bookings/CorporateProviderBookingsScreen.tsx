@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const ProviderServicesScreen = () => {
+const CorporateProviderBookingsScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Services</Text>
+      <Text style={styles.title}>My Bookings</Text>
     </View>
   );
 };
@@ -23,4 +23,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProviderServicesScreen; 
+export default CorporateProviderBookingsScreen; 

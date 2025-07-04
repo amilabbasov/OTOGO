@@ -23,7 +23,7 @@ const RESEND_TIME = 59;
 
 const OtpScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation<AuthScreenProps<Routes.otp>['navigation']>();
+  const navigation = useNavigation<any>();
   const route = useRoute<AuthScreenProps<Routes.otp>['route']>();
   const { email, userType, isPasswordReset } = route.params;
   const { verifyOTP, resendOTP, forgotPassword, isLoading } = useAuthStore();
@@ -34,7 +34,9 @@ const OtpScreen = () => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
+    console.log('OtpScreen loaded. Params: Email:', email, 'User Type:', userType, 'Is Password Reset:', isPasswordReset);
     if (timer === 0) {
+      console.log('OTP Resend timer reached 0. Enabling resend.');
       setIsResendDisabled(false);
       return;
     }
@@ -50,12 +52,12 @@ const OtpScreen = () => {
     const newOtp = [...otp];
     newOtp[idx] = value;
     setOtp(newOtp);
-    
-    // Clear error when user starts typing
+    console.log(`OTP input changed: Index ${idx}, Value: ${value}. Current OTP: ${newOtp.join('')}`);
     if (otpError) {
+      console.log('Clearing OTP error message.');
       setOtpError('');
     }
-    
+
     if (value && idx < OTP_LENGTH - 1) {
       inputRefs.current[idx + 1]?.focus();
     }
@@ -67,7 +69,7 @@ const OtpScreen = () => {
   const handleResend = async () => {
     if (!isResendDisabled) {
       setOtpError('');
-      
+      console.log('Attempting to resend OTP. Type:', isPasswordReset ? 'Password Reset' : userType);
       try {
         let result;
         if (isPasswordReset) {
@@ -75,14 +77,17 @@ const OtpScreen = () => {
         } else if (userType) {
           result = await resendOTP(email, userType);
         } else {
+          console.error('Resend OTP failed: User type not defined for registration flow.');
           setOtpError(t('Failed to resend OTP code'));
           return;
         }
         if (result.success) {
           setTimer(RESEND_TIME);
           Alert.alert(t('Success'), result.message || t('OTP code resent successfully'));
+          console.log('Resend OTP successful. Timer reset.');
         } else {
           setOtpError(result.message || t('Failed to resend OTP code'));
+          console.error('Resend OTP failed:', result.message || 'Unknown error');
         }
       } catch (error: any) {
         console.error('Resend OTP error:', error);
@@ -94,49 +99,57 @@ const OtpScreen = () => {
   const handleVerify = async () => {
     const otpCode = otp.join('');
     setOtpError('');
+    console.log('Attempting to verify OTP. Code:', otpCode, 'Full length:', otpCode.length);
 
     if (otpCode.length !== OTP_LENGTH) {
       setOtpError(t('Please enter the complete OTP code'));
+      console.log('OTP length mismatch. Displaying error.');
       return;
     }
 
     try {
-      let result;
       if (isPasswordReset) {
-        // For password reset flow, we don't need userType for OTP verification
-        result = await verifyOTP(email, otpCode, 'driver'); // Use default userType for password reset
+        console.log('OTP verification for password reset flow. Navigating to ResetPasswordScreen.');
+        navigation.navigate(Routes.resetPassword, { email, token: otpCode });
       } else if (userType) {
-        result = await verifyOTP(email, otpCode, userType);
-      } else {
-        setOtpError(t('An error occurred. Please try again.'));
-        return;
-      }
+        console.log('OTP verification for registration flow. Calling verifyOTP from AuthStore.');
+        const result = await verifyOTP(email, otpCode, userType);
 
-      if (result.success) {
-        if (isPasswordReset) {
-          // For password reset flow, navigate to reset password screen
-          navigation.navigate(Routes.resetPassword, { email, token: otpCode });
-        } else if (result.requiresProfile && userType) {
-          navigation.navigate(Routes.personalInfo, { email, userType });
+        if (result.success) {
+          console.log('verifyOTP successful. Result requiresProfile:', result.requiresProfile);
+          if (result.requiresProfile) {
+            console.log('Navigating to MainRouter (PersonalInfoScreen expected). Resetting navigation stack.');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: Routes.main as any }],
+            });
+            console.log('Navigation reset to Routes.main completed.');
+          } else {
+            Alert.alert(t('Success'), t('OTP verified successfully'));
+          }
         } else {
-          Alert.alert(t('Success'), t('OTP verified successfully'));
-        }
-      } else {
-        const errorMessage = result.message || t('OTP code is wrong.');
-        
-        if (errorMessage.toLowerCase().includes('invalid') || 
-            errorMessage.toLowerCase().includes('wrong') || 
+          const errorMessage = result.message || t('OTP code is wrong.');
+          console.log('OTP verification failed:', errorMessage);
+
+          if (errorMessage.toLowerCase().includes('invalid') ||
+            errorMessage.toLowerCase().includes('wrong') ||
             errorMessage.toLowerCase().includes('incorrect') ||
             errorMessage.toLowerCase().includes('expired') ||
             errorMessage.includes('400')) {
-          setOtpError(t('OTP code is wrong.'));
-        } else {
-          setOtpError(errorMessage);
+            setOtpError(t('OTP code is wrong.'));
+            console.log('Setting generic "OTP code is wrong" error.');
+          } else {
+            setOtpError(errorMessage);
+          }
         }
+      } else {
+        setOtpError(t('An error occurred. Please try again.'));
+        console.error('OTP verification failed: User type is undefined for registration flow.');
+        return;
       }
     } catch (error: any) {
       console.error('OTP verification error:', error);
-      
+
       if (error.response?.status === 400) {
         setOtpError(t('OTP code is wrong.'));
       } else if (error.message) {

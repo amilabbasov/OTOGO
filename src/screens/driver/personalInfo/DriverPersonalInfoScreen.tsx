@@ -13,55 +13,179 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import type { AuthScreenProps } from '../../../navigations/types';
+import type { MainScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { useAuthStore } from '../../../stores/auth/authStore';
 import { colors } from '../../../theme/color';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 
-const PersonalInfoScreen = () => {
+const DriverPersonalInfoScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation<AuthScreenProps<Routes.personalInfo>['navigation']>();
-  const route = useRoute<AuthScreenProps<Routes.personalInfo>['route']>();
-  const { email, userType } = route.params;
-  const { completeProfile, isLoading } = useAuthStore();
+  const navigation = useNavigation<MainScreenProps<Routes.personalInfo>['navigation']>();
+  const route = useRoute<MainScreenProps<Routes.personalInfo>['route']>();
+  const { completeProfile, isLoading, pendingProfileCompletion, clearAuth } = useAuthStore();
+  
+  // Get email and userType from route params or pending profile completion
+  const email = route.params?.email || pendingProfileCompletion?.email || '';
+  const userType = route.params?.userType || pendingProfileCompletion?.userType || 'driver';
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
 
-  const handleContinue = async () => {
+  const handleDateChange = (text: string) => {
+    // Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, '');
+    
+    // Format as DD/MM/YYYY
+    let formatted = cleaned;
+    if (cleaned.length >= 2) {
+      formatted = cleaned.slice(0, 2);
+      if (cleaned.length >= 4) {
+        formatted += '/' + cleaned.slice(2, 4);
+        if (cleaned.length >= 8) {
+          formatted += '/' + cleaned.slice(4, 8);
+        } else if (cleaned.length > 4) {
+          formatted += '/' + cleaned.slice(4);
+        }
+      } else if (cleaned.length > 2) {
+        formatted += '/' + cleaned.slice(2);
+      }
+    }
+    
+    // Limit to DD/MM/YYYY format (10 characters)
+    if (formatted.length <= 10) {
+      setDateOfBirth(formatted);
+    }
+  };
+
+  const validateForm = () => {
     if (!firstName.trim()) {
       Alert.alert(t('Error'), t('Please enter your first name'));
-      return;
+      return false;
     }
     
     if (!lastName.trim()) {
       Alert.alert(t('Error'), t('Please enter your last name'));
-      return;
+      return false;
     }
     
     if (!dateOfBirth.trim()) {
       Alert.alert(t('Error'), t('Please enter your date of birth'));
-      return;
+      return false;
     }
 
-    const result = await completeProfile(email, firstName.trim(), lastName.trim(), '1234567890', userType);
+    // Validate date format (DD/MM/YYYY)
+    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = dateOfBirth.match(dateRegex);
+    
+    if (!match) {
+      Alert.alert(t('Error'), t('Please enter date in DD/MM/YYYY format'));
+      return false;
+    }
+
+    const [, day, month, year] = match;
+    const dayNum = parseInt(day, 10);
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    const currentYear = new Date().getFullYear();
+
+    if (dayNum < 1 || dayNum > 31) {
+      Alert.alert(t('Error'), t('Please enter a valid day (01-31)'));
+      return false;
+    }
+
+    if (monthNum < 1 || monthNum > 12) {
+      Alert.alert(t('Error'), t('Please enter a valid month (01-12)'));
+      return false;
+    }
+
+    if (yearNum < 1900 || yearNum > currentYear) {
+      Alert.alert(t('Error'), t('Please enter a valid year'));
+      return false;
+    }
+
+    // Check if it's a valid date
+    const testDate = new Date(yearNum, monthNum - 1, dayNum);
+    if (testDate.getDate() !== dayNum || testDate.getMonth() !== monthNum - 1 || testDate.getFullYear() !== yearNum) {
+      Alert.alert(t('Error'), t('Please enter a valid date'));
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleContinue = async () => {
+    if (!validateForm()) return;
+
+    // For drivers, pass birthday and use modelId 0 for now (will be set in car selection)
+    const result = await completeProfile(
+      email, 
+      firstName.trim(), 
+      lastName.trim(), 
+      '', // Empty phone for drivers
+      userType,
+      dateOfBirth || new Date().toISOString().split('T')[0], // Use entered date or today's date
+      0 // modelId will be set later in car selection
+    );
     
     if (result.success) {
+      // Navigate to car selection screen for drivers
       Alert.alert(
         t('Success'), 
-        t('Profile completed successfully! Welcome to the app.'),
+        t('Profile completed successfully! Now please select your car.'),
         [
           {
             text: t('OK'),
             onPress: () => {
+              // Navigate to car selection screen
+              navigation.navigate(Routes.carSelection, { userType });
             }
           }
         ]
       );
     } else {
-      Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
+      console.log('Profile completion failed:', result.message);
+      
+      // Check if this is a "User not found" error that requires re-registration
+      if (result.message && result.message.includes('not found')) {
+        Alert.alert(
+          t('Registration Required'), 
+          t('Your account was not found. This may happen if there was an issue during registration. Please try registering again with OTP verification.'),
+          [
+            {
+              text: t('Go to Registration'),
+              onPress: () => {
+                // Clear auth state and navigate to registration
+                clearAuth();
+                // Since we're in the driver flow, we'll clear auth which will redirect to auth router
+                // The auth router will show the login screen, and user can navigate to registration from there
+              }
+            },
+            {
+              text: t('Try Again'),
+              onPress: () => {
+                // Stay on current screen to allow user to retry
+                console.log('User chose to retry profile completion');
+              },
+              style: 'cancel'
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          t('Error'), 
+          result.message || t('Failed to complete profile. Please try again.'),
+          [
+            {
+              text: t('OK'),
+              onPress: () => {
+                console.log('Profile completion error acknowledged by user');
+              }
+            }
+          ]
+        );
+      }
     }
   };
 
@@ -72,22 +196,22 @@ const PersonalInfoScreen = () => {
           <View style={styles.innerContent}>
             <View style={styles.contentPadding}>
               <View style={styles.header}>
-                <Text style={styles.title}>Your</Text>
+                <Text style={styles.title}>Driver</Text>
                 <Text style={styles.title}>Information</Text>
                 <Text style={styles.subtitle}>
-                  Please fill in your identity correctly
+                  Please fill in your personal information to complete your driver profile
                 </Text>
               </View>
 
               <View style={styles.form}>
                 <View style={styles.nameRow}>
                   <View style={styles.nameInputGroup}>
-                    <Text style={styles.label}>First name</Text>
+                    <Text style={styles.label}>First name*</Text>
                     <TextInput
                       style={styles.input}
                       value={firstName}
                       onChangeText={setFirstName}
-                      placeholder="Name"
+                      placeholder="Enter your first name"
                       placeholderTextColor="#C6C6C6"
                       autoCapitalize="words"
                       autoComplete="given-name"
@@ -95,12 +219,12 @@ const PersonalInfoScreen = () => {
                   </View>
                   
                   <View style={styles.nameInputGroup}>
-                    <Text style={styles.label}>Last name</Text>
+                    <Text style={styles.label}>Last name*</Text>
                     <TextInput
                       style={styles.input}
                       value={lastName}
                       onChangeText={setLastName}
-                      placeholder="Surname"
+                      placeholder="Enter your last name"
                       placeholderTextColor="#C6C6C6"
                       autoCapitalize="words"
                       autoComplete="family-name"
@@ -130,7 +254,7 @@ const PersonalInfoScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Date of birth</Text>
+                  <Text style={styles.label}>Date of birth*</Text>
                   <View style={styles.inputContainer}>
                     <SvgImage
                       source={require('../../../assets/svg/personalInfo/calendar.svg')}
@@ -141,9 +265,11 @@ const PersonalInfoScreen = () => {
                     <TextInput
                       style={[styles.input, styles.inputWithIcon]}
                       value={dateOfBirth}
-                      onChangeText={setDateOfBirth}
-                      placeholder="Birthday"
+                      onChangeText={handleDateChange}
+                      placeholder="DD/MM/YYYY"
                       placeholderTextColor="#C6C6C6"
+                      keyboardType="numeric"
+                      maxLength={10}
                     />
                   </View>
                 </View>
@@ -159,7 +285,7 @@ const PersonalInfoScreen = () => {
               disabled={isLoading}
             >
               <Text style={styles.continueButtonText}>
-                {isLoading ? 'Saving...' : 'Continue'}
+                {isLoading ? 'Saving...' : 'Continue to Car Selection'}
               </Text>
               <Text style={styles.continueButtonArrow}>→</Text>
             </TouchableOpacity>
@@ -277,4 +403,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PersonalInfoScreen;
+export default DriverPersonalInfoScreen;

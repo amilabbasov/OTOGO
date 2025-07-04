@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const ProviderHomeScreen = () => {
+const CorporateProviderEarningsScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Provider Dashboard</Text>
-      <Text style={styles.subtitle}>Manage your services and bookings</Text>
+      <Text style={styles.title}>Earnings</Text>
     </View>
   );
 };
@@ -20,13 +19,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 8,
     color: '#015656',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
   },
 });
 
-export default ProviderHomeScreen; 
+export default CorporateProviderEarningsScreen; 

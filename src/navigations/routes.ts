@@ -14,6 +14,7 @@ export enum Routes {
     otp = 'otp',
     resetPassword = 'resetPassword',
     personalInfo = 'personalInfo',
+    carSelection = 'carSelection',
     
     // Driver routes
     driverHome = 'driverHome',
@@ -31,4 +32,4 @@ export enum Routes {
     // Tab navigators
     driverTabs = 'driverTabs',
     providerTabs = 'providerTabs',
-} 
+}

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import { useAuthStore } from '../../../../stores/auth/authStore';
 
-const ProviderProfileScreen = () => {
+const CorporateProviderProfileScreen = () => {
   const { t } = useTranslation();
   const { clearAuth, user } = useAuthStore();
 
@@ -30,7 +30,9 @@ const ProviderProfileScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profileInfo}>
-        <Text style={styles.title}>{t('Provider Profile')}</Text>
+        <Text style={styles.title}>
+          {user?.userType === 'sole_provider' ? t('Sole Provider Profile') : t('Corporate Provider Profile')}
+        </Text>
         {user && (
           <Text style={styles.userInfo}>{user.name}</Text>
         )}
@@ -80,4 +82,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProviderProfileScreen; 
+export default CorporateProviderProfileScreen; 

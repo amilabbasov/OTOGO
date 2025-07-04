@@ -46,6 +46,10 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
 
     if (!result.success) {
       setErrorMessage(result.message || t('Login failed'));
+    } else if (result.pendingProfileCompletion) {
+      // User logged in successfully but needs to complete profile
+      console.log('Login successful but profile completion required');
+      // Navigation will be handled by Router.tsx based on pendingProfileCompletion state
     }
   };
 

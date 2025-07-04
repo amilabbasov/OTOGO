@@ -13,6 +13,7 @@ const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
 const providerTypes = [
   { id: 'corporate', label: 'Corporate provider' },
   { id: 'sole', label: 'Sole provider' },
+
 ];
 
 const CARD_WIDTH = 160;

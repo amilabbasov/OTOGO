@@ -89,14 +89,24 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleProviderTypeSelection = (selectedProviderType: string) => {
     setProviderType(selectedProviderType);
+    // Continue to service selection screen
     animateToScreen('service', false);
   };
 
   const handleServiceSelection = (selectedService: string) => {
     setService(selectedService);
-    navigation.navigate(Routes.register, {
-      userType: userType
-    });
+    // Now navigate to register with the combined userType based on provider type selection
+    if (userType === 'driver') {
+      navigation.navigate(Routes.register, {
+        userType: 'driver'
+      });
+    } else {
+      // For providers, use the selected provider type to create the combined userType
+      const combinedUserType = providerType === 'sole' ? 'sole_provider' : 'corporate_provider';
+      navigation.navigate(Routes.register, {
+        userType: combinedUserType
+      });
+    }
   };
 
   const renderCurrentScreen = () => {
