@@ -118,7 +118,7 @@ const DriverPersonalInfoScreen = () => {
   const handleContinue = async () => {
     if (!validateForm()) return;
 
-    // For drivers, pass birthday and use modelId 0 for now (will be set in car selection)
+    // For drivers, pass birthday and use default modelId 1 (car selection commented out for now)
     const result = await completeProfile(
       email, 
       firstName.trim(), 
@@ -126,20 +126,20 @@ const DriverPersonalInfoScreen = () => {
       '', // Empty phone for drivers
       userType,
       dateOfBirth || new Date().toISOString().split('T')[0], // Use entered date or today's date
-      0 // modelId will be set later in car selection
+      1 // Default modelId - car selection commented out for now
     );
     
     if (result.success) {
-      // Navigate to car selection screen for drivers
+      // Complete registration directly - car selection commented out
       Alert.alert(
         t('Success'), 
-        t('Profile completed successfully! Now please select your car.'),
+        t('Profile completed successfully! Welcome to OTOGO.'),
         [
           {
             text: t('OK'),
             onPress: () => {
-              // Navigate to car selection screen
-              navigation.navigate(Routes.carSelection, { userType });
+              // Navigate directly to driver tabs - car selection skipped
+              navigation.navigate(Routes.driverTabs);
             }
           }
         ]
@@ -285,7 +285,7 @@ const DriverPersonalInfoScreen = () => {
               disabled={isLoading}
             >
               <Text style={styles.continueButtonText}>
-                {isLoading ? 'Saving...' : 'Continue to Car Selection'}
+                {isLoading ? 'Saving...' : 'Complete Registration'}
               </Text>
               <Text style={styles.continueButtonArrow}>→</Text>
             </TouchableOpacity>

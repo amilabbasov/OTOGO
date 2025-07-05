@@ -360,7 +360,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             surname: lastName.trim(),
             birthday: formatDateForAPI(birthday || ''),
             phone: phone.trim() || '',
-            modelId: modelId || 0
+            modelId: modelId || 1 // Default modelId for drivers (car selection commented out)
           };
         } else {
           requestData = {

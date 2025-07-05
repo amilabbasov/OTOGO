@@ -62,7 +62,7 @@ export class RegistrationFlowManager {
 
   markProfileCompleted(): void {
     this.state.currentState = REGISTRATION_STATES.PROFILE_COMPLETED;
-    this.state.nextStep = this.state.userType === USER_TYPES.DRIVER ? 'Select your car' : 'Complete setup';
+    this.state.nextStep = this.state.userType === USER_TYPES.DRIVER ? 'Complete setup' : 'Complete setup';
     this.state.canProceed = true;
     this.state.error = null;
   }
@@ -138,7 +138,7 @@ export class RegistrationFlowManager {
       case REGISTRATION_STATES.OTP_VERIFIED:
         return 'Profile Setup';
       case REGISTRATION_STATES.PROFILE_COMPLETED:
-        return this.state.userType === USER_TYPES.DRIVER ? 'Car Selection' : 'Final Setup';
+        return this.state.userType === USER_TYPES.DRIVER ? 'Final Setup' : 'Final Setup';
       case REGISTRATION_STATES.COMPLETED:
         return 'Welcome!';
       default:
@@ -202,7 +202,7 @@ export const getNextRoute = (state: RegistrationFlowState): string => {
     case REGISTRATION_STATES.OTP_VERIFIED:
       return 'PersonalInfo';
     case REGISTRATION_STATES.PROFILE_COMPLETED:
-      return state.userType === USER_TYPES.DRIVER ? 'CarSelection' : 'MainApp';
+      return state.userType === USER_TYPES.DRIVER ? 'MainApp' : 'MainApp';
     case REGISTRATION_STATES.COMPLETED:
       return 'MainApp';
     default:

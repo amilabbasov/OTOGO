@@ -4,7 +4,7 @@ import DriverNavigator from './DriverNavigator';
 import SoleProviderNavigator from './SoleProviderNavigator';
 import CorporateProviderNavigator from './CorporateProviderNavigator';
 import PersonalInfoScreen from '../screens/common/PersonalInfoScreen';
-import CarSelectionScreen from '../screens/driver/carSelection/CarSelectionScreen';
+// import CarSelectionScreen from '../screens/driver/carSelection/CarSelectionScreen'; // Car selection commented out
 import UserTypeSelectionScreen from '../screens/auth/onboarding/flow/UserTypeSelectionScreen';
 import { useAuthStore } from '../stores/auth/authStore';
 import { Routes } from './routes';
@@ -63,7 +63,7 @@ export const MainRouter = () => {
       initialRouteName={initialRouteName}
     >
       <MainStack.Screen name={Routes.personalInfo} component={PersonalInfoScreen} />
-      <MainStack.Screen name={Routes.carSelection} component={CarSelectionScreen} />
+      {/* <MainStack.Screen name={Routes.carSelection} component={CarSelectionScreen} /> Car selection commented out */}
       {userType === 'driver' ? (
         <>
           {console.log('MainRouter: User is DRIVER. Rendering DriverNavigator.')}
