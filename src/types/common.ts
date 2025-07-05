@@ -1,4 +1,6 @@
-export type UserType = 'customer' | 'provider';
+import { USER_TYPES, type UserType as ConstUserType } from '../constants/registration';
+
+export type UserType = ConstUserType;
 
 export interface AuthUser {
   id: string;

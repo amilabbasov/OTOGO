@@ -1,3 +1,5 @@
+import { UserType } from './common';
+
 export interface Provider {
   id: string;
   name: string;
@@ -9,6 +11,7 @@ export interface Provider {
   totalReviews: number;
   isVerified: boolean;
   isAvailable: boolean;
+  userType: UserType;
   location: {
     latitude: number;
     longitude: number;

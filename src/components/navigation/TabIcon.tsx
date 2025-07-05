@@ -9,7 +9,7 @@ interface TabIconProps {
 const TabIcon: React.FC<TabIconProps> = ({ route, focused }) => {
   const getIconText = () => {
     switch (route) {
-      // Customer tabs
+      // Driver tabs
       case 'Home':
         return '🏠';
       case 'Services':

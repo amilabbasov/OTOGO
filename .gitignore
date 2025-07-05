@@ -16,6 +16,7 @@ android/build/
 *.iml
 *.hprof
 *.log
+**/.cxx
 
 # iOS
 ios/build/
@@ -43,4 +44,4 @@ ios/OTOGO.xcodeproj/xcuserdata/
 *.tmp
 *.bak
 *.orig
-node_modules
+node_modules/

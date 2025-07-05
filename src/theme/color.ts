@@ -1,37 +1,23 @@
 export const colors = {
-    // Primary colors
-    primary: '#48FF8B',
-    primaryLight: '#027272',
-    primaryDark: '#013939',
-    
-    // Secondary colors
-    secondary: '#110C22',
-    secondaryLight: '#2A1F44',
-    
-    // Background colors
-    background: '#F3F3F3',
-    white: '#FFFFFF',
-    cardBackground: '#FFFFFF',
-    
-    // Text colors
-    textPrimary: '#110C22',
-    textSecondary: '#6B7280',
-    textLight: '#9CA3AF',
-    
-    // Status colors
-    success: '#10B981',
-    error: '#EF4444',
-    warning: '#F59E0B',
-    info: '#3B82F6',
-    
-    // Border colors
-    border: '#E5E7EB',
-    borderLight: '#F3F4F6',
-    
-    // Overlay colors
-    overlay: 'rgba(0, 0, 0, 0.5)',
-    
-    // Gradient colors
-    gradientStart: '#015656',
-    gradientEnd: '#027272',
-  };
+  background: '#FFFFFF',
+  primary: '#D5FF5F',
+  secondary: '#111111',
+  text: '#000000',
+  textSecondary: '#666666',
+  border: '#E5E7EB',
+  error: '#FF4444',
+  success: '#36F88D',
+  warning: '#FFA500',
+  gray: {
+    50: '#F9FAFB',
+    100: '#F3F4F6',
+    200: '#E5E7EB',
+    300: '#D1D5DB',
+    400: '#9CA3AF',
+    500: '#6B7280',
+    600: '#4B5563',
+    700: '#374151',
+    800: '#1F2937',
+    900: '#111827',
+  },
+};

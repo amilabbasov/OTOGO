@@ -10,23 +10,33 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { AuthScreenProps } from '../../../navigations/types';
+import { Routes } from '../../../navigations/routes';
+import { useAuthStore } from '../../../stores/auth/authStore';
 
 const OTP_LENGTH = 6;
 const RESEND_TIME = 59;
 
 const OtpScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+  const route = useRoute<AuthScreenProps<Routes.otp>['route']>();
+  const { email, userType, isPasswordReset } = route.params;
+  const { verifyOTP, resendOTP, forgotPassword, isLoading } = useAuthStore();
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
+  const [otpError, setOtpError] = useState('');
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
+    console.log('OtpScreen loaded. Params: Email:', email, 'User Type:', userType, 'Is Password Reset:', isPasswordReset);
     if (timer === 0) {
+      console.log('OTP Resend timer reached 0. Enabling resend.');
       setIsResendDisabled(false);
       return;
     }
@@ -42,6 +52,12 @@ const OtpScreen = () => {
     const newOtp = [...otp];
     newOtp[idx] = value;
     setOtp(newOtp);
+    console.log(`OTP input changed: Index ${idx}, Value: ${value}. Current OTP: ${newOtp.join('')}`);
+    if (otpError) {
+      console.log('Clearing OTP error message.');
+      setOtpError('');
+    }
+
     if (value && idx < OTP_LENGTH - 1) {
       inputRefs.current[idx + 1]?.focus();
     }
@@ -50,13 +66,98 @@ const OtpScreen = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!isResendDisabled) {
-      setTimer(RESEND_TIME);
+      setOtpError('');
+      console.log('Attempting to resend OTP. Type:', isPasswordReset ? 'Password Reset' : userType);
+      try {
+        let result;
+        if (isPasswordReset) {
+          result = await forgotPassword(email);
+        } else if (userType) {
+          result = await resendOTP(email, userType);
+        } else {
+          console.error('Resend OTP failed: User type not defined for registration flow.');
+          setOtpError(t('Failed to resend OTP code'));
+          return;
+        }
+        if (result.success) {
+          setTimer(RESEND_TIME);
+          Alert.alert(t('Success'), result.message || t('OTP code resent successfully'));
+          console.log('Resend OTP successful. Timer reset.');
+        } else {
+          setOtpError(result.message || t('Failed to resend OTP code'));
+          console.error('Resend OTP failed:', result.message || 'Unknown error');
+        }
+      } catch (error: any) {
+        console.error('Resend OTP error:', error);
+        setOtpError(t('Failed to resend OTP code. Please try again.'));
+      }
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
+    const otpCode = otp.join('');
+    setOtpError('');
+    console.log('Attempting to verify OTP. Code:', otpCode, 'Full length:', otpCode.length);
+
+    if (otpCode.length !== OTP_LENGTH) {
+      setOtpError(t('Please enter the complete OTP code'));
+      console.log('OTP length mismatch. Displaying error.');
+      return;
+    }
+
+    try {
+      if (isPasswordReset) {
+        console.log('OTP verification for password reset flow. Navigating to ResetPasswordScreen.');
+        navigation.navigate(Routes.resetPassword, { email, token: otpCode });
+      } else if (userType) {
+        console.log('OTP verification for registration flow. Calling verifyOTP from AuthStore.');
+        const result = await verifyOTP(email, otpCode, userType);
+
+        if (result.success) {
+          console.log('verifyOTP successful. Result requiresProfile:', result.requiresProfile);
+          if (result.requiresProfile) {
+            console.log('Navigating to MainRouter (PersonalInfoScreen expected). Resetting navigation stack.');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: Routes.main as any }],
+            });
+            console.log('Navigation reset to Routes.main completed.');
+          } else {
+            Alert.alert(t('Success'), t('OTP verified successfully'));
+          }
+        } else {
+          const errorMessage = result.message || t('OTP code is wrong.');
+          console.log('OTP verification failed:', errorMessage);
+
+          if (errorMessage.toLowerCase().includes('invalid') ||
+            errorMessage.toLowerCase().includes('wrong') ||
+            errorMessage.toLowerCase().includes('incorrect') ||
+            errorMessage.toLowerCase().includes('expired') ||
+            errorMessage.includes('400')) {
+            setOtpError(t('OTP code is wrong.'));
+            console.log('Setting generic "OTP code is wrong" error.');
+          } else {
+            setOtpError(errorMessage);
+          }
+        }
+      } else {
+        setOtpError(t('An error occurred. Please try again.'));
+        console.error('OTP verification failed: User type is undefined for registration flow.');
+        return;
+      }
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+
+      if (error.response?.status === 400) {
+        setOtpError(t('OTP code is wrong.'));
+      } else if (error.message) {
+        setOtpError(error.message);
+      } else {
+        setOtpError(t('An error occurred. Please try again.'));
+      }
+    }
   };
 
   return (
@@ -66,14 +167,14 @@ const OtpScreen = () => {
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
           >
             <View style={styles.innerContent}>
               <View style={styles.header}>
                 <Text style={styles.title}>{t('Verify')}</Text>
-                <Text style={styles.title}>{t('your number')}</Text>
+                <Text style={styles.title}>{t('your email')}</Text>
                 <Text style={styles.subtitle}>
-                  {t('To verify your account, enter the 6 digit OTP code that we sent to your number.')}
+                  {t('To verify your account, enter the 6 digit OTP code that we sent to your email.')}
                 </Text>
               </View>
               <View style={styles.otpRow}>
@@ -88,7 +189,7 @@ const OtpScreen = () => {
                     style={[
                       styles.otpInput,
                       digit ? styles.otpInputFilled : null,
-                      inputRefs.current[idx]?.isFocused?.() ? styles.otpInputFocused : null,
+                      otpError ? styles.otpInputError : null,
                     ]}
                     keyboardType="number-pad"
                     maxLength={1}
@@ -102,6 +203,9 @@ const OtpScreen = () => {
                   />
                 ))}
               </View>
+              {otpError ? (
+                <Text style={styles.otpErrorText}>{otpError}</Text>
+              ) : null}
               <Text style={styles.didntGetText}>{t("Didn't get the code?")}</Text>
               <TouchableOpacity
                 style={[styles.resendButton, isResendDisabled && styles.resendButtonDisabled]}
@@ -113,10 +217,17 @@ const OtpScreen = () => {
                 </Text>
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
-              <TouchableOpacity style={styles.verifyButton} onPress={handleVerify} activeOpacity={0.8}>
-                <Text style={styles.verifyButtonText}>{t('Verify')}</Text>
+              <TouchableOpacity
+                style={[styles.verifyButton, isLoading && styles.verifyButtonDisabled]}
+                onPress={handleVerify}
+                activeOpacity={0.8}
+                disabled={isLoading}
+              >
+                <Text style={styles.verifyButtonText}>
+                  {isLoading ? t('Verifying...') : t('Verify')}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.backButton} onPress={() => { navigation.goBack() }}>
+              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Text style={styles.backButtonText}>{t('Back')}</Text>
               </TouchableOpacity>
             </View>
@@ -143,7 +254,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 32,
-    marginTop: 16,
   },
   title: {
     fontSize: 30,
@@ -184,6 +294,16 @@ const styles = StyleSheet.create({
   otpInputFilled: {
     borderColor: '#36F88D',
   },
+  otpInputError: {
+    borderColor: '#FF4444',
+  },
+  otpErrorText: {
+    color: '#FF4444',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: -20,
+    marginBottom: 20,
+  },
   didntGetText: {
     textAlign: 'center',
     color: '#888',
@@ -217,6 +337,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
+  verifyButtonDisabled: {
+    opacity: 0.5,
+  },
   verifyButtonText: {
     color: '#000',
     fontSize: 14,
@@ -238,4 +361,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OtpScreen; 
+export default OtpScreen;

@@ -5,7 +5,6 @@ export enum Routes {
     main = 'main',
     
     // Onboarding routes
-    changeLanguage = 'changeLanguage',
     onboardingPager = 'onboardingPager',
     
     // Auth routes
@@ -13,12 +12,15 @@ export enum Routes {
     register = 'register',
     forgotPassword = 'forgotPassword',
     otp = 'otp',
+    resetPassword = 'resetPassword',
+    personalInfo = 'personalInfo',
+    carSelection = 'carSelection',
     
-    // Customer routes
-    customerHome = 'customerHome',
-    customerServices = 'customerServices',
-    customerBookings = 'customerBookings',
-    customerProfile = 'customerProfile',
+    // Driver routes
+    driverHome = 'driverHome',
+    driverServices = 'driverServices',
+    driverBookings = 'driverBookings',
+    driverProfile = 'driverProfile',
     
     // Provider routes
     providerHome = 'providerHome',
@@ -28,6 +30,6 @@ export enum Routes {
     providerProfile = 'providerProfile',
     
     // Tab navigators
-    customerTabs = 'customerTabs',
+    driverTabs = 'driverTabs',
     providerTabs = 'providerTabs',
-} 
+}
