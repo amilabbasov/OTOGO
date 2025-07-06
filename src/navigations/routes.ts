@@ -6,6 +6,7 @@ export enum Routes {
     
     // Onboarding routes
     onboardingPager = 'onboardingPager',
+    userTypeSelection = 'userTypeSelection',
     
     // Auth routes
     login = 'login',
@@ -15,6 +16,8 @@ export enum Routes {
     resetPassword = 'resetPassword',
     personalInfo = 'personalInfo',
     carSelection = 'carSelection',
+    products = 'products',
+    branches = 'branches',
     
     // Driver routes
     driverHome = 'driverHome',

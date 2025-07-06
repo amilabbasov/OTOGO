@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
@@ -18,39 +19,70 @@ import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { LanguageSelector } from '../../../components/languageSelector/LanguageSelector';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import useAuthStore from '../../../stores/auth/authStore';
 
 type LoginScreenProps = AuthScreenProps<Routes.login>;
 
 const LoginScreen: React.FC<LoginScreenProps> = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<LoginScreenProps['navigation']>();
-  const { login, isLoading } = useAuthStore();
+  
+  const { login, isLoading, error, clearError } = useAuthStore(); 
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; general?: string }>({});
 
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
 
-  const handleLogin = async () => {
-    setErrorMessage('');
+  const validateForm = () => {
+    const errors: { email?: string; password?: string; general?: string } = {};
+    
+    if (!email.trim()) {
+      errors.email = t('Email is required');
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = t('Please enter a valid email address');
+    }
+    
+    if (!password.trim()) {
+      errors.password = t('Password is required');
+    }
+    // else if (password.length < 6) {
+    //   errors.password = t('Password must be at least 6 characters');
+    // }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
-    if (!email || !password) {
-      setErrorMessage(t('Please fill in all fields.'));
+  const clearFieldError = (field: 'email' | 'password') => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
+  useEffect(() => {
+    if (error) {
+      setFieldErrors({ general: error });
+    } else {
+      setFieldErrors({});
+    }
+  }, [error]);
+
+  const handleLogin = async () => {
+    setFieldErrors({});
+
+    if (!validateForm()) {
       return;
     }
 
-    const result = await login(email, password);
-
-    if (!result.success) {
-      setErrorMessage(result.message || t('Login failed'));
-    } else if (result.pendingProfileCompletion) {
-      // User logged in successfully but needs to complete profile
-      console.log('Login successful but profile completion required');
-      // Navigation will be handled by Router.tsx based on pendingProfileCompletion state
-    }
+    await login({ email: email.trim(), password });
   };
 
   const handleForgotPassword = () => {
@@ -78,7 +110,7 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
               <View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('Email')}</Text>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer, fieldErrors.email && styles.inputError]}>
                     <SvgImage
                       source={require('../../../assets/svg/auth/phone-icon.svg')}
                       width={20}
@@ -93,16 +125,22 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
                       keyboardType="email-address"
                       autoCapitalize="none"
                       value={email}
-                      onChangeText={setEmail}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        clearFieldError('email');
+                      }}
                       returnKeyType="next"
                       onSubmitEditing={() => passwordInputRef.current?.focus()}
                     />
                   </View>
+                  {fieldErrors.email && (
+                    <Text style={styles.fieldErrorText}>{fieldErrors.email}</Text>
+                  )}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('Password')}</Text>
-                  <View style={styles.inputContainer}>
+                  <View style={[styles.inputContainer, fieldErrors.password && styles.inputError]}>
                     <SvgImage
                       source={require('../../../assets/svg/auth/lock-icon.svg')}
                       width={20}
@@ -116,7 +154,10 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
                       placeholder={t('Enter your password')}
                       secureTextEntry={!showPassword}
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        clearFieldError('password');
+                      }}
                       returnKeyType="done"
                       onSubmitEditing={handleLogin}
                     />
@@ -133,26 +174,31 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
                       />
                     </TouchableOpacity>
                   </View>
+                  {fieldErrors.password && (
+                    <Text style={styles.fieldErrorText}>{fieldErrors.password}</Text>
+                  )}
                 </View>
 
                 <TouchableOpacity style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
                   <Text style={styles.forgotPasswordText}>{t('Forgot Password?')}</Text>
                 </TouchableOpacity>
 
-                {errorMessage ? (
-                  <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{errorMessage}</Text>
+                {fieldErrors.general && (
+                  <View style={styles.generalErrorContainer}>
+                    <Text style={styles.generalErrorText}>{fieldErrors.general}</Text>
                   </View>
-                ) : null}
+                )}
 
                 <TouchableOpacity
                   style={[styles.loginButton, isLoading && styles.disabledButton]}
                   onPress={handleLogin}
                   disabled={isLoading}
                 >
-                  <Text style={styles.loginButtonText}>
-                    {isLoading ? t('Signing in...') : t('Sign In')}
-                  </Text>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Text style={styles.loginButtonText}>{t('Sign In')}</Text>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -276,7 +322,14 @@ const styles = StyleSheet.create({
     color: '#111',
     fontWeight: '500',
   },
-  errorContainer: {
+  fieldErrorText: {
+    color: '#CC0000',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  generalErrorContainer: {
     backgroundColor: '#FFE6E6',
     borderRadius: 8,
     padding: 12,
@@ -284,7 +337,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#FF4444',
   },
-  errorText: {
+  generalErrorText: {
     color: '#CC0000',
     fontSize: 14,
     lineHeight: 20,
@@ -312,6 +365,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  inputError: {
+    borderColor: '#FF4444',
+    borderWidth: 1,
+  },
 });
 
-export default LoginScreen; 
+export default LoginScreen;

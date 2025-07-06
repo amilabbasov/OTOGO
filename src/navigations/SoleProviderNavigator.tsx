@@ -20,7 +20,7 @@ const SoleProviderNavigator = () => {
         ),
         tabBarActiveTintColor: '#36F88D',
         tabBarInactiveTintColor: '#B3B3B3',
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
         headerShown: false,
         tabBarStyle: {
           backgroundColor: '#fff',
@@ -29,13 +29,37 @@ const SoleProviderNavigator = () => {
           shadowOpacity: 0,
           height: 80,
         },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          marginTop: 4,
+        },
       })}
     >
-      <Tab.Screen name={Routes.providerHome} component={SoleProviderHomeScreen} />
-      <Tab.Screen name={Routes.providerServices} component={SoleProviderServicesScreen} />
-      <Tab.Screen name={Routes.providerBookings} component={SoleProviderBookingsScreen} />
-      <Tab.Screen name={Routes.providerEarnings} component={SoleProviderEarningsScreen} />
-      <Tab.Screen name={Routes.providerProfile} component={SoleProviderProfileScreen} />
+      <Tab.Screen 
+        name={Routes.providerHome} 
+        component={SoleProviderHomeScreen}
+        options={{ tabBarLabel: 'Home' }}
+      />
+      <Tab.Screen 
+        name={Routes.providerServices} 
+        component={SoleProviderServicesScreen}
+        options={{ tabBarLabel: 'Services' }}
+      />
+      <Tab.Screen 
+        name={Routes.providerBookings} 
+        component={SoleProviderBookingsScreen}
+        options={{ tabBarLabel: 'Bookings' }}
+      />
+      <Tab.Screen 
+        name={Routes.providerEarnings} 
+        component={SoleProviderEarningsScreen}
+        options={{ tabBarLabel: 'Earnings' }}
+      />
+      <Tab.Screen 
+        name={Routes.providerProfile} 
+        component={SoleProviderProfileScreen}
+        options={{ tabBarLabel: 'Profile' }}
+      />
     </Tab.Navigator>
   );
 };

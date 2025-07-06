@@ -18,7 +18,7 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('onboarding');
   const [userType, setUserType] = useState<'driver' | 'provider' | null>(null);
   const [providerType, setProviderType] = useState<string>('');
-  const [service, setService] = useState<string>('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
@@ -76,8 +76,10 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
       setUserType(userType);
       
       if (userType === 'driver') {
+        // For drivers, we don't need service selection, so navigate directly to register
         navigation.navigate(Routes.register, {
-          userType: userType
+          userType: 'driver',
+          selectedServices: []
         });
       } else {
         animateToScreen('providerType', false);
@@ -93,18 +95,20 @@ const OnboardingPagerScreen: React.FC<Props> = ({ navigation }) => {
     animateToScreen('service', false);
   };
 
-  const handleServiceSelection = (selectedService: string) => {
-    setService(selectedService);
+  const handleServiceSelection = (selectedServices: string[]) => {
+    setSelectedServices(selectedServices);
     // Now navigate to register with the combined userType based on provider type selection
     if (userType === 'driver') {
       navigation.navigate(Routes.register, {
-        userType: 'driver'
+        userType: 'driver',
+        selectedServices: []
       });
     } else {
       // For providers, use the selected provider type to create the combined userType
-      const combinedUserType = providerType === 'sole' ? 'sole_provider' : 'corporate_provider';
+      const combinedUserType = providerType === 'sole' ? 'individual_provider' : 'company_provider';
       navigation.navigate(Routes.register, {
-        userType: combinedUserType
+        userType: combinedUserType,
+        selectedServices: selectedServices
       });
     }
   };

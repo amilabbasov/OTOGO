@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../../../stores/auth/authStore';
+import useAuthStore from '../../../../stores/auth/authStore';
 
 const SoleProviderProfileScreen = () => {
   const { t } = useTranslation();
@@ -31,10 +31,10 @@ const SoleProviderProfileScreen = () => {
     <View style={styles.container}>
       <View style={styles.profileInfo}>
         <Text style={styles.title}>
-          {user?.userType === 'sole_provider' ? t('Sole Provider Profile') : t('Corporate Provider Profile')}
+          {user?.userType === 'individual_provider' ? t('Individual Provider Profile') : t('Corporate Provider Profile')}
         </Text>
         {user && (
-          <Text style={styles.userInfo}>{user.name}</Text>
+          <Text style={styles.userInfo}>{user.email}</Text>
         )}
       </View>
       

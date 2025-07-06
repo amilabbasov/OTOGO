@@ -11,13 +11,15 @@ import {
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import useAuthStore from '../../../stores/auth/authStore';
+import { UserType } from '../../../types/common';
 
 type RegisterScreenProps = AuthScreenProps<Routes.register>;
 
@@ -25,16 +27,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<RegisterScreenProps['navigation']>();
   const route = useRoute<RegisterScreenProps['route']>();
-  const { userType } = route.params;
-  const { signup, isLoading } = useAuthStore();
+  
+  const { userType } = route.params as { userType: UserType }; 
+  const { selectedServices = [] } = route.params as { selectedServices?: string[] };
+  
+  const { register, isLoading, error: authStoreError } = useAuthStore(); 
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rePassword, setRePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showRePassword, setShowRePassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [localErrorMessage, setLocalErrorMessage] = useState(''); 
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [rePasswordError, setRePasswordError] = useState('');
@@ -46,11 +50,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
-      setEmailError('');
+      setEmailError(t('Email cannot be empty.'));
       return false;
     }
     if (!emailRegex.test(email)) {
-      setEmailError(t('Email is invalid'));
+      setEmailError(t('Email is invalid.'));
       return false;
     }
     setEmailError('');
@@ -59,21 +63,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
 
   const validatePassword = (password: string) => {
     if (!password) {
-      setPasswordError('');
+      setPasswordError(t('Password cannot be empty.'));
       return false;
     }
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      setPasswordError(t('Password must be minimum 8 characters long and contain letters A-Z, a-z, numbers and at least one special character.'));
-      return false;
-    }
+    // const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // if (!passwordRegex.test(password)) {
+    //   setPasswordError(t('Password must be minimum 8 characters long and contain letters A-Z, a-z, numbers and at least one special character.'));
+    //   return false;
+    // }
     setPasswordError('');
     return true;
   };
 
   const validateRePassword = (rePassword: string) => {
     if (!rePassword) {
-      setRePasswordError('');
+      setRePasswordError(t('Re-Password cannot be empty.'));
       return false;
     }
     if (password !== rePassword) {
@@ -86,59 +90,57 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
 
   const handleEmailChange = (text: string) => {
     setEmail(text);
-    validateEmail(text);
   };
 
   const handlePasswordChange = (text: string) => {
     setPassword(text);
-    validatePassword(text);
-    if (rePassword) {
-      validateRePassword(rePassword);
-    }
   };
 
   const handleRePasswordChange = (text: string) => {
     setRePassword(text);
-    validateRePassword(text);
   };
 
   const handleSignUp = async () => {
-    setErrorMessage('');
-    setSuccessMessage('');
+    setLocalErrorMessage('');
 
     if (!userType) {
-      setErrorMessage(t('User type is required. Please go back and select your account type.'));
+      setLocalErrorMessage(t('User type is required. Please go back and select your account type.'));
       return;
     }
 
-    // Validate all fields
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
     const isRePasswordValid = validateRePassword(rePassword);
 
-    if (!email || !password || !rePassword) {
-      setErrorMessage(t('Please fill in all fields.'));
-      return;
-    }
-
     if (!isEmailValid || !isPasswordValid || !isRePasswordValid) {
-      setErrorMessage(t('Please fix the errors above.'));
+      setLocalErrorMessage(t('Please fix the errors above.'));
       return;
     }
 
     try {
-      const result = await signup(email, password, rePassword, userType);
+      await register({
+        email,
+        password,
+        repeatPassword: rePassword,
+        userType: userType,
+        selectedServices: selectedServices
+      });
 
-      if (result.success) {
-        setSuccessMessage(t('Registration successful! Please check your email for the OTP code.'));
-        setTimeout(() => {
-          navigation.navigate(Routes.otp, { email, userType });
-        }, 1000);
-      } else {
-        setErrorMessage(result.message || t('Registration failed. Please try again.'));
+      Alert.alert(
+        t('Success'), 
+        t('Registration successful! Please check your email for the OTP code.'),
+        [{ text: t('OK'), onPress: () => navigation.navigate(Routes.otp, { email: email, userType: userType }) }]
+      );
+
+    } catch (err: any) {
+      const apiErrorMessage = err.response?.data?.message || t('Registration failed. Please try again.');
+      const internalMessage = err.response?.data?.internalMessage;
+
+      Alert.alert(t('Registration Error'), apiErrorMessage);
+
+      if (internalMessage === 'User already exists') {
+        navigation.navigate(Routes.login);
       }
-    } catch (error: any) {
-      setErrorMessage(t('An unexpected error occurred. Please try again.'));
     }
   };
 
@@ -189,6 +191,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       autoCapitalize="none"
                       value={email}
                       onChangeText={handleEmailChange}
+                      onBlur={() => validateEmail(email)} 
                       returnKeyType="next"
                       onSubmitEditing={() => passwordInputRef.current?.focus()}
                     />
@@ -215,6 +218,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       secureTextEntry={!showPassword}
                       value={password}
                       onChangeText={handlePasswordChange}
+                      onBlur={() => validatePassword(password)} 
                       returnKeyType="next"
                       onSubmitEditing={() => rePasswordInputRef.current?.focus()}
                     />
@@ -253,6 +257,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                       secureTextEntry={!showRePassword}
                       value={rePassword}
                       onChangeText={handleRePasswordChange}
+                      onBlur={() => validateRePassword(rePassword)} 
                       returnKeyType="done"
                       onSubmitEditing={handleSignUp}
                     />
@@ -274,15 +279,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                   ) : null}
                 </View>
 
-                {errorMessage ? (
+                {(localErrorMessage || authStoreError) ? (
                   <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{errorMessage}</Text>
-                  </View>
-                ) : null}
-
-                {successMessage ? (
-                  <View style={styles.successContainer}>
-                    <Text style={styles.successText}>{successMessage}</Text>
+                    <Text style={styles.errorText}>{localErrorMessage || authStoreError}</Text>
                   </View>
                 ) : null}
 
@@ -291,9 +290,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
                   onPress={handleSignUp}
                   disabled={isLoading}
                 >
-                  <Text style={styles.signUpButtonText}>
-                    {isLoading ? t('Signing up...') : t('Sign Up')}
-                  </Text>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Text style={styles.signUpButtonText}>{t('Sign Up')}</Text>
+                  )}
                 </TouchableOpacity>
 
                 <Text style={styles.termsText}>
