@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,55 +7,90 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { SvgImage } from '../../../../components/svgImage/SvgImage';
 import { useTranslation } from 'react-i18next';
+import useServicesStore from '../../../../stores/services/servicesStore';
+import useProviderServicesStore from '../../../../stores/provider/providerServicesStore';
 
 const AnimatedTouchable = Reanimated.createAnimatedComponent(TouchableOpacity);
-
-const services = [
-  { id: 'automotive-service', label: 'Automotive Service' },
-  { id: 'automotive-store', label: 'Automotive Store' },
-  { id: 'evacuator', label: 'Evacuator' },
-  { id: 'sober-driver', label: 'Sober Driver' },
-];
 
 const CARD_WIDTH = 140;
 const CARD_HEIGHT = 160;
 
 interface ServiceSelectionProps {
-  onNext: (service: string) => void;
+  onNext: (services: string[]) => void;
+  userType?: 'individual_provider' | 'company_provider';
 }
 
-const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext }) => {
-  const [selected, setSelected] = useState<string | null>(null);
+const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext, userType }) => {
+  const [selected, setSelected] = useState<number[]>([]);
   const { t } = useTranslation();
+  const { services, isLoading, error, fetchServices } = useServicesStore();
+  const { updateServices, isLoading: isUpdating, error: updateError } = useProviderServicesStore();
 
-  const getSharedStyles = (serviceId: string, isSelected: boolean) => {
-    const scale = useSharedValue(isSelected ? 1.05 : 1);
-    const translateY = useSharedValue(isSelected ? -10 : 0);
-    const zIndex = isSelected ? 2 : 1;
-    const elevation = isSelected ? 12 : 4;
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
-    React.useEffect(() => {
-      scale.value = withSpring(isSelected ? 1.05 : 1);
-      translateY.value = withSpring(isSelected ? -10 : 0);
-    }, [isSelected]);
-
-    const style = useAnimatedStyle(() => ({
-      transform: [
-        { scale: scale.value },
-        { translateY: translateY.value },
-      ],
-      zIndex,
-      elevation,
-    }));
-
-    return style;
+  const handleServiceToggle = (serviceId: number) => {
+    setSelected(prev => {
+      if (prev.includes(serviceId)) {
+        return prev.filter(id => id !== serviceId);
+      } else {
+        return [...prev, serviceId];
+      }
+    });
   };
 
-  const handleContinue = () => {
-    if (selected) {
-      onNext(selected);
+  const handleContinue = async () => {
+    if (selected.length === 0) {
+      return;
+    }
+
+    try {
+      // If this is a provider (not during registration), update services via API
+      if (userType && (userType === 'individual_provider' || userType === 'company_provider')) {
+        await updateServices(selected, userType);
+      }
+      
+      // Convert service IDs to service names for backward compatibility
+      const selectedServiceNames = services
+        .filter(service => selected.includes(service.id))
+        .map(service => service.serviceName);
+      
+      onNext(selectedServiceNames);
+    } catch (error) {
+      console.error('Error updating services:', error);
+      // Still proceed with the flow even if API call fails
+      const selectedServiceNames = services
+        .filter(service => selected.includes(service.id))
+        .map(service => service.serviceName);
+      
+      onNext(selectedServiceNames);
     }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centeredGroup}>
+          <ActivityIndicator size="large" color="#D5FF5F" />
+          <Text style={styles.loadingText}>{t('Loading services...')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centeredGroup}>
+          <Text style={styles.errorText}>{t('Failed to load services')}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchServices}>
+            <Text style={styles.retryButtonText}>{t('Retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,31 +98,66 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext }) => {
         <Text style={styles.title}>{t('What services do you offer?')}</Text>
         <View style={styles.cardGrid}>
           {services.map(service => {
-            const isSelected = selected === service.id;
-            const animatedStyle = getSharedStyles(service.id, isSelected);
-
+            const isSelected = selected.includes(service.id);
+            
             return (
-              <AnimatedTouchable
+              <ServiceCard
                 key={service.id}
-                style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
-                onPress={() => setSelected(service.id)}
-                activeOpacity={1}
-              >
-                <Text style={isSelected ? styles.selectedText : styles.text}>{t(service.label)}</Text>
-              </AnimatedTouchable>
+                service={service}
+                isSelected={isSelected}
+                onPress={() => handleServiceToggle(service.id)}
+              />
             );
           })}
         </View>
       </View>
       <TouchableOpacity
-        style={[styles.button, !selected && { opacity: 0.5 }]}
-        disabled={!selected}
+        style={[styles.button, selected.length === 0 && { opacity: 0.5 }]}
+        disabled={selected.length === 0 || isUpdating}
         onPress={handleContinue}
       >
-        <Text style={styles.buttonText}>{t('Get Started')}</Text>
+        <Text style={styles.buttonText}>
+          {isUpdating ? t('Updating...') : t('Get Started')}
+        </Text>
         <SvgImage source={require('../../../../assets/svg/onboarding/circle-arrow-right.svg')} width={20} height={20} style={styles.buttonArrow} />
       </TouchableOpacity>
     </SafeAreaView>
+  );
+};
+
+// Separate component for animated service cards
+const ServiceCard: React.FC<{
+  service: { id: number; serviceName: string };
+  isSelected: boolean;
+  onPress: () => void;
+}> = ({ service, isSelected, onPress }) => {
+  const scale = useSharedValue(isSelected ? 1.05 : 1);
+  const translateY = useSharedValue(isSelected ? -10 : 0);
+
+  React.useEffect(() => {
+    scale.value = withSpring(isSelected ? 1.05 : 1);
+    translateY.value = withSpring(isSelected ? -10 : 0);
+  }, [isSelected, scale, translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: translateY.value },
+    ],
+    zIndex: isSelected ? 2 : 1,
+    elevation: isSelected ? 12 : 4,
+  }));
+
+  return (
+    <AnimatedTouchable
+      style={[styles.card, isSelected ? styles.selectedCard : {}, animatedStyle]}
+      onPress={onPress}
+      activeOpacity={1}
+    >
+      <Text style={isSelected ? styles.selectedText : styles.text}>
+        {service.serviceName}
+      </Text>
+    </AnimatedTouchable>
   );
 };
 
@@ -174,5 +244,27 @@ const styles = StyleSheet.create({
   },
   buttonArrow: {
     marginLeft: 8,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF4444',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#D5FF5F',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  retryButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

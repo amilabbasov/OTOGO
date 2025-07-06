@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { MainScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import useAuthStore from '../../../stores/auth/authStore';
 import { colors } from '../../../theme/color';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 
@@ -25,7 +25,6 @@ const DriverPersonalInfoScreen = () => {
   const route = useRoute<MainScreenProps<Routes.personalInfo>['route']>();
   const { completeProfile, isLoading, pendingProfileCompletion, clearAuth } = useAuthStore();
   
-  // Get email and userType from route params or pending profile completion
   const email = route.params?.email || pendingProfileCompletion?.email || '';
   const userType = route.params?.userType || pendingProfileCompletion?.userType || 'driver';
   
@@ -118,36 +117,21 @@ const DriverPersonalInfoScreen = () => {
   const handleContinue = async () => {
     if (!validateForm()) return;
 
-    // For drivers, pass birthday and use default modelId 1 (car selection commented out for now)
     const result = await completeProfile(
       email, 
       firstName.trim(), 
       lastName.trim(), 
-      '', // Empty phone for drivers
+      '',
       userType,
-      dateOfBirth || new Date().toISOString().split('T')[0], // Use entered date or today's date
-      1 // Default modelId - car selection commented out for now
+      dateOfBirth || new Date().toISOString().split('T')[0],
     );
     
     if (result.success) {
-      // Complete registration directly - car selection commented out
-      Alert.alert(
-        t('Success'), 
-        t('Profile completed successfully! Welcome to OTOGO.'),
-        [
-          {
-            text: t('OK'),
-            onPress: () => {
-              // Navigate directly to driver tabs - car selection skipped
-              navigation.navigate(Routes.driverTabs);
-            }
-          }
-        ]
-      );
+      // Navigate to car selection after personal info completion
+      navigation.navigate(Routes.carSelection, { userType });
     } else {
       console.log('Profile completion failed:', result.message);
       
-      // Check if this is a "User not found" error that requires re-registration
       if (result.message && result.message.includes('not found')) {
         Alert.alert(
           t('Registration Required'), 
@@ -156,16 +140,12 @@ const DriverPersonalInfoScreen = () => {
             {
               text: t('Go to Registration'),
               onPress: () => {
-                // Clear auth state and navigate to registration
                 clearAuth();
-                // Since we're in the driver flow, we'll clear auth which will redirect to auth router
-                // The auth router will show the login screen, and user can navigate to registration from there
               }
             },
             {
               text: t('Try Again'),
               onPress: () => {
-                // Stay on current screen to allow user to retry
                 console.log('User chose to retry profile completion');
               },
               style: 'cancel'

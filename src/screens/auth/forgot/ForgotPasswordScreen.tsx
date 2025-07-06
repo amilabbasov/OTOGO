@@ -1,77 +1,69 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  TextInput, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
   SafeAreaView,
   StatusBar,
   Platform,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import useAuthStore from '../../../stores/auth/authStore';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassword>) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
-  const { forgotPassword, isLoading } = useAuthStore();
+  const { forgotPassword, isLoading, error: authStoreError } = useAuthStore();
 
   const handleSendResetLink = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert(t('Error'), t('Please enter your email address'));
       return;
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t('Error'), t('Please enter a valid email address'));
       return;
     }
 
-    const result = await forgotPassword(email.trim());
-
-    if (result.success) {
-
-      navigation.navigate(Routes.otp, { 
-        email: email.trim(), 
-        isPasswordReset: true 
-      });
-    } else {
-      Alert.alert('Error', result.message || 'Failed to send reset instructions. Please try again.');
+    try {
+      await forgotPassword(email.trim());
+      
+      Alert.alert(
+        t('Success'),
+        t('A password reset code has been sent to your email. Please check your inbox.')
+      );
+      navigation.navigate(Routes.otp, { email: email.trim(), isPasswordReset: true });
+    } catch (error: any) {
+      const errorMessage = authStoreError || t('Failed to send reset instructions. Please try again.');
+      Alert.alert(t('Error'), errorMessage);
     }
   };
 
   const handleNeedHelp = () => {
     console.log('Need help pressed');
-    // You can add help/support functionality here
   };
-
-  // Note: The second API endpoint /api/passwords/reset would be used in a separate screen
-  // where the user enters the token they received via email along with their new password:
-  // {
-  //   "email": "string",
-  //   "token": "string", 
-  //   "newPassword": "string",
-  //   "repeatPassword": "string"
-  // }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity 
               onPress={() => navigation.goBack()}
@@ -84,21 +76,19 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
             </TouchableOpacity>
           </View>
 
-          {/* Content */}
           <View style={styles.content}>
-            <Text style={styles.title}>Forgot{'\n'}Your Password?</Text>
+            <Text style={styles.title}>{t('Forgot Your Password?')}</Text>
             
             <Text style={styles.subtitle}>
-              Please enter your email to send the OTP verification to reset your password
+              {t('Please enter your email to send the OTP verification to reset your password')}
             </Text>
 
-            {/* Email Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email</Text>
+              <Text style={styles.inputLabel}>{t('Email')}</Text>
               <View style={styles.emailInputContainer}>
                 <TextInput
                   style={styles.emailInput}
-                  placeholder="Enter your email"
+                  placeholder={t('Enter your email')}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -108,23 +98,25 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
               </View>
             </View>
 
-            {/* Send Reset Link Button */}
             <TouchableOpacity 
               style={[styles.signInButton, isLoading && styles.signInButtonDisabled]}
               onPress={handleSendResetLink}
               disabled={isLoading}
             >
-              <Text style={styles.signInButtonText}>
-                {isLoading ? 'Sending...' : 'Send reset code'}
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Text style={styles.signInButtonText}>
+                  {t('Send reset code')}
+                </Text>
+              )}
             </TouchableOpacity>
 
-            {/* Need Help */}
             <TouchableOpacity 
               style={styles.needHelpButton}
               onPress={handleNeedHelp}
             >
-              <Text style={styles.needHelpText}>Need Help?</Text>
+              <Text style={styles.needHelpText}>{t('Need Help?')}</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

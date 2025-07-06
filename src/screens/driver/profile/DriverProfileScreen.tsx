@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import useAuthStore from '../../../stores/auth/authStore';
 
 const UserProfileScreen = () => {
   const { t } = useTranslation();
-  const { clearAuth, user } = useAuthStore();
+  
+  const { logout, user } = useAuthStore(); 
 
   const handleLogout = () => {
     Alert.alert(
@@ -20,7 +21,12 @@ const UserProfileScreen = () => {
           text: t('Logout'),
           style: 'destructive',
           onPress: async () => {
-            await clearAuth();
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert(t('Error'), t('Failed to logout. Please try again.'));
+              console.error('Logout failed:', error);
+            }
           },
         },
       ]
@@ -30,9 +36,14 @@ const UserProfileScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profileInfo}>
-        <Text style={styles.title}>{t('Driver Profile')}</Text>
-        {user && (
-          <Text style={styles.userInfo}>{user.name}</Text>
+        <Text style={styles.title}>{t('User Profile')}</Text>
+        {user ? (
+          <View>
+            <Text style={styles.userInfo}>{t('Email')}: {user.email}</Text>
+            <Text style={styles.userInfo}>{t('User Type')}: {t(user.userType)}</Text>
+          </View>
+        ) : (
+          <Text style={styles.userInfo}>{t('User data not available.')}</Text>
         )}
       </View>
       
@@ -63,7 +74,8 @@ const styles = StyleSheet.create({
   userInfo: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 20,
+    marginBottom: 5,
+    textAlign: 'center',
   },
   logoutButton: {
     backgroundColor: '#FF4444',
@@ -80,4 +92,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserProfileScreen; 
+export default UserProfileScreen;

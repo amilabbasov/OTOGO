@@ -10,76 +10,81 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import type { MainScreenProps } from '../../../navigations/types';
-import { Routes } from '../../../navigations/routes';
-import { colors } from '../../../theme/color';
-import { SvgImage } from '../../../components/svgImage/SvgImage';
-import useAuthStore from '../../../stores/auth/authStore';
+import type { MainScreenProps } from '../../../../navigations/types';
+import { Routes } from '../../../../navigations/routes';
+import { colors } from '../../../../theme/color';
+import useAuthStore from '../../../../stores/auth/authStore';
 
-interface CarType {
+interface VehicleType {
   id: string;
   name: string;
   description: string;
   icon: string;
-  capacity: string;
+  services: string[];
 }
 
-const carTypes: CarType[] = [
+const vehicleTypes: VehicleType[] = [
   {
-    id: 'economy',
-    name: 'Economy',
-    description: 'Compact and fuel-efficient',
+    id: 'car',
+    name: 'Car Wash',
+    description: 'Standard car washing services',
     icon: '🚗',
-    capacity: '4 seats',
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    description: 'Comfortable for daily rides',
-    icon: '🚙',
-    capacity: '4-5 seats',
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    description: 'Luxury and comfort',
-    icon: '🚗',
-    capacity: '4-5 seats',
+    services: ['exterior_wash', 'interior_clean', 'waxing'],
   },
   {
     id: 'suv',
-    name: 'SUV',
-    description: 'Spacious and versatile',
-    icon: '🚐',
-    capacity: '6-7 seats',
+    name: 'SUV Wash',
+    description: 'Larger vehicle washing services',
+    icon: '🚙',
+    services: ['exterior_wash', 'interior_clean', 'waxing', 'tire_cleaning'],
   },
   {
-    id: 'van',
-    name: 'Van',
-    description: 'Large groups and cargo',
-    icon: '🚐',
-    capacity: '8+ seats',
+    id: 'truck',
+    name: 'Truck Wash',
+    description: 'Commercial vehicle services',
+    icon: '🚛',
+    services: ['exterior_wash', 'interior_clean', 'engine_cleaning'],
+  },
+  {
+    id: 'motorcycle',
+    name: 'Motorcycle Wash',
+    description: 'Two-wheel vehicle services',
+    icon: '🏍️',
+    services: ['exterior_wash', 'chain_cleaning', 'polishing'],
+  },
+  {
+    id: 'boat',
+    name: 'Boat Wash',
+    description: 'Marine vehicle services',
+    icon: '🚤',
+    services: ['exterior_wash', 'interior_clean', 'hull_cleaning'],
   },
 ];
 
-const CarSelectionScreen = () => {
+const SoleProviderCarSelectionScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<MainScreenProps<Routes.carSelection>['navigation']>();
   const route = useRoute<MainScreenProps<Routes.carSelection>['route']>();
   const { setPendingProfileCompletionState } = useAuthStore();
-  const [selectedCarType, setSelectedCarType] = useState<string | null>(null);
+  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
 
-  const handleCarSelection = (carId: string) => {
-    setSelectedCarType(carId);
+  const handleVehicleSelection = (vehicleId: string) => {
+    setSelectedVehicles(prev => {
+      if (prev.includes(vehicleId)) {
+        return prev.filter(id => id !== vehicleId);
+      } else {
+        return [...prev, vehicleId];
+      }
+    });
   };
 
   const handleContinue = () => {
-    if (!selectedCarType) {
-      Alert.alert(t('Error'), t('Please select a car type'));
+    if (selectedVehicles.length === 0) {
+      Alert.alert(t('Error'), t('Please select at least one vehicle type'));
       return;
     }
 
-    // Complete the driver registration flow
+    // Complete the sole provider registration flow
     Alert.alert(
       t('Success'),
       t('Registration completed successfully! Welcome to OTOGO.'),
@@ -95,25 +100,27 @@ const CarSelectionScreen = () => {
     );
   };
 
-  const renderCarType = ({ item }: { item: CarType }) => (
+  const renderVehicleType = ({ item }: { item: VehicleType }) => (
     <TouchableOpacity
       style={[
-        styles.carTypeCard,
-        selectedCarType === item.id && styles.selectedCard
+        styles.vehicleTypeCard,
+        selectedVehicles.includes(item.id) && styles.selectedCard
       ]}
-      onPress={() => handleCarSelection(item.id)}
+      onPress={() => handleVehicleSelection(item.id)}
       activeOpacity={0.8}
     >
-      <View style={styles.carTypeIcon}>
-        <Text style={styles.carTypeEmoji}>{item.icon}</Text>
+      <View style={styles.vehicleTypeIcon}>
+        <Text style={styles.vehicleTypeEmoji}>{item.icon}</Text>
       </View>
-      <View style={styles.carTypeInfo}>
-        <Text style={styles.carTypeName}>{item.name}</Text>
-        <Text style={styles.carTypeDescription}>{item.description}</Text>
-        <Text style={styles.carTypeCapacity}>{item.capacity}</Text>
+      <View style={styles.vehicleTypeInfo}>
+        <Text style={styles.vehicleTypeName}>{item.name}</Text>
+        <Text style={styles.vehicleTypeDescription}>{item.description}</Text>
+        <Text style={styles.vehicleTypeServices}>
+          {item.services.length} service{item.services.length !== 1 ? 's' : ''} available
+        </Text>
       </View>
       <View style={styles.selectionIndicator}>
-        {selectedCarType === item.id && (
+        {selectedVehicles.includes(item.id) && (
           <View style={styles.selectedIndicator} />
         )}
       </View>
@@ -125,15 +132,15 @@ const CarSelectionScreen = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Select Your</Text>
-          <Text style={styles.title}>Car Type</Text>
+          <Text style={styles.title}>Vehicle Types</Text>
           <Text style={styles.subtitle}>
-            Choose the type of vehicle you'll be driving with OTOGO
+            Choose the types of vehicles you can provide services for
           </Text>
         </View>
 
         <FlatList
-          data={carTypes}
-          renderItem={renderCarType}
+          data={vehicleTypes}
+          renderItem={renderVehicleType}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
@@ -143,11 +150,11 @@ const CarSelectionScreen = () => {
           <TouchableOpacity
             style={[
               styles.continueButton,
-              !selectedCarType && styles.continueButtonDisabled
+              selectedVehicles.length === 0 && styles.continueButtonDisabled
             ]}
             onPress={handleContinue}
             activeOpacity={0.8}
-            disabled={!selectedCarType}
+            disabled={selectedVehicles.length === 0}
           >
             <Text style={styles.continueButtonText}>
               Complete Registration
@@ -191,7 +198,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 20,
   },
-  carTypeCard: {
+  vehicleTypeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FAFAFA',
@@ -205,7 +212,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: '#F5FFF5',
   },
-  carTypeIcon: {
+  vehicleTypeIcon: {
     width: 50,
     height: 50,
     backgroundColor: '#E8F5E8',
@@ -214,24 +221,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 16,
   },
-  carTypeEmoji: {
+  vehicleTypeEmoji: {
     fontSize: 24,
   },
-  carTypeInfo: {
+  vehicleTypeInfo: {
     flex: 1,
   },
-  carTypeName: {
+  vehicleTypeName: {
     fontSize: 18,
     fontWeight: '600',
     color: '#000',
     marginBottom: 4,
   },
-  carTypeDescription: {
+  vehicleTypeDescription: {
     fontSize: 14,
     color: '#666',
     marginBottom: 2,
   },
-  carTypeCapacity: {
+  vehicleTypeServices: {
     fontSize: 12,
     color: '#888',
     fontWeight: '500',
@@ -279,4 +286,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CarSelectionScreen;
+export default SoleProviderCarSelectionScreen; 

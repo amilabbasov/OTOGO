@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { MainScreenProps } from '../../../../navigations/types';
 import { Routes } from '../../../../navigations/routes';
-import { useAuthStore } from '../../../../stores/auth/authStore';
+import useAuthStore from '../../../../stores/auth/authStore';
 import { colors } from '../../../../theme/color';
 import { SvgImage } from '../../../../components/svgImage/SvgImage';
 
@@ -23,11 +23,18 @@ const CorporateProviderPersonalInfoScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<MainScreenProps<Routes.personalInfo>['navigation']>();
   const route = useRoute<MainScreenProps<Routes.personalInfo>['route']>();
-  const { completeProfile, isLoading, pendingProfileCompletion } = useAuthStore();
+  const { completeProfile, isLoading, pendingProfileCompletion, isAuthenticated } = useAuthStore();
+  
+  console.log('CorporateProviderPersonalInfoScreen render:', {
+    isAuthenticated,
+    pendingProfileCompletion: pendingProfileCompletion.isPending,
+    userType: pendingProfileCompletion.userType,
+    routeParams: route.params
+  });
   
   // Get email and userType from route params or pending profile completion
   const email = route.params?.email || pendingProfileCompletion?.email || '';
-  const userType = route.params?.userType || pendingProfileCompletion?.userType || 'corporate_provider';
+  const userType = route.params?.userType || pendingProfileCompletion?.userType || 'company_provider';
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -82,20 +89,8 @@ const CorporateProviderPersonalInfoScreen = () => {
     const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType);
     
     if (result.success) {
-      // For corporate providers, complete the registration flow
-      Alert.alert(
-        t('Success'), 
-        t('Profile completed successfully! Welcome to OTOGO.'),
-        [
-          {
-            text: t('OK'),
-            onPress: () => {
-              // Navigate to provider tabs
-              navigation.navigate(Routes.providerTabs);
-            }
-          }
-        ]
-      );
+      // Navigate to products selection after personal info completion
+      navigation.navigate(Routes.products, { userType });
     } else {
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }

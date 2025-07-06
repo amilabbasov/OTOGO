@@ -11,22 +11,47 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import useAuthStore from '../../../stores/auth/authStore';
+import { UserType } from '../../../types/common';
 
 const OTP_LENGTH = 6;
-const RESEND_TIME = 59;
+const RESEND_TIME = 90;
+
+type OtpRouteParams = {
+  email: string;
+  userType?: UserType;
+  isPasswordReset?: boolean;
+};
 
 const OtpScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<AuthScreenProps<Routes.otp>['route']>();
-  const { email, userType, isPasswordReset } = route.params;
-  const { verifyOTP, resendOTP, forgotPassword, isLoading } = useAuthStore();
+  
+  const { 
+    verifyOtp,
+    resendOtp,
+    forgotPassword,
+    resendPasswordResetOtp,
+    isLoading,
+    error: authStoreError,
+    pendingProfileCompletion,
+    tempEmail,
+    userType: storeUserType,
+  } = useAuthStore();
+
+  // Get email and userType from route params or auth store
+  const routeParams = route.params as OtpRouteParams;
+  const email = routeParams?.email || pendingProfileCompletion.email || tempEmail || '';
+  const userType = routeParams?.userType || pendingProfileCompletion.userType || storeUserType;
+  const isPasswordReset = routeParams?.isPasswordReset || false;
+
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
@@ -34,9 +59,7 @@ const OtpScreen = () => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
-    console.log('OtpScreen loaded. Params: Email:', email, 'User Type:', userType, 'Is Password Reset:', isPasswordReset);
     if (timer === 0) {
-      console.log('OTP Resend timer reached 0. Enabling resend.');
       setIsResendDisabled(false);
       return;
     }
@@ -52,9 +75,7 @@ const OtpScreen = () => {
     const newOtp = [...otp];
     newOtp[idx] = value;
     setOtp(newOtp);
-    console.log(`OTP input changed: Index ${idx}, Value: ${value}. Current OTP: ${newOtp.join('')}`);
     if (otpError) {
-      console.log('Clearing OTP error message.');
       setOtpError('');
     }
 
@@ -69,29 +90,20 @@ const OtpScreen = () => {
   const handleResend = async () => {
     if (!isResendDisabled) {
       setOtpError('');
-      console.log('Attempting to resend OTP. Type:', isPasswordReset ? 'Password Reset' : userType);
       try {
-        let result;
         if (isPasswordReset) {
-          result = await forgotPassword(email);
+          await resendPasswordResetOtp(email);
         } else if (userType) {
-          result = await resendOTP(email, userType);
+          await resendOtp(email, userType); 
         } else {
-          console.error('Resend OTP failed: User type not defined for registration flow.');
-          setOtpError(t('Failed to resend OTP code'));
+          setOtpError(t('Failed to resend OTP code: User type or reset context is missing.'));
           return;
         }
-        if (result.success) {
-          setTimer(RESEND_TIME);
-          Alert.alert(t('Success'), result.message || t('OTP code resent successfully'));
-          console.log('Resend OTP successful. Timer reset.');
-        } else {
-          setOtpError(result.message || t('Failed to resend OTP code'));
-          console.error('Resend OTP failed:', result.message || 'Unknown error');
-        }
-      } catch (error: any) {
-        console.error('Resend OTP error:', error);
-        setOtpError(t('Failed to resend OTP code. Please try again.'));
+        setTimer(RESEND_TIME);
+        Alert.alert(t('Success'), t('OTP code resent successfully'));
+      } catch (err: any) {
+        const displayError = authStoreError || t('Failed to resend OTP code. Please try again.');
+        setOtpError(displayError);
       }
     }
   };
@@ -99,64 +111,47 @@ const OtpScreen = () => {
   const handleVerify = async () => {
     const otpCode = otp.join('');
     setOtpError('');
-    console.log('Attempting to verify OTP. Code:', otpCode, 'Full length:', otpCode.length);
+
+    console.log('OTP verification attempt:', {
+      otpCode,
+      email,
+      userType,
+      isPasswordReset
+    });
 
     if (otpCode.length !== OTP_LENGTH) {
       setOtpError(t('Please enter the complete OTP code'));
-      console.log('OTP length mismatch. Displaying error.');
       return;
     }
 
     try {
       if (isPasswordReset) {
-        console.log('OTP verification for password reset flow. Navigating to ResetPasswordScreen.');
+        await verifyOtp({ email, token: otpCode, userType: userType as UserType }); 
+        Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
         navigation.navigate(Routes.resetPassword, { email, token: otpCode });
       } else if (userType) {
-        console.log('OTP verification for registration flow. Calling verifyOTP from AuthStore.');
-        const result = await verifyOTP(email, otpCode, userType);
-
-        if (result.success) {
-          console.log('verifyOTP successful. Result requiresProfile:', result.requiresProfile);
-          if (result.requiresProfile) {
-            console.log('Navigating to MainRouter (PersonalInfoScreen expected). Resetting navigation stack.');
-            navigation.reset({
-              index: 0,
-              routes: [{ name: Routes.main as any }],
-            });
-            console.log('Navigation reset to Routes.main completed.');
-          } else {
-            Alert.alert(t('Success'), t('OTP verified successfully'));
-          }
-        } else {
-          const errorMessage = result.message || t('OTP code is wrong.');
-          console.log('OTP verification failed:', errorMessage);
-
-          if (errorMessage.toLowerCase().includes('invalid') ||
-            errorMessage.toLowerCase().includes('wrong') ||
-            errorMessage.toLowerCase().includes('incorrect') ||
-            errorMessage.toLowerCase().includes('expired') ||
-            errorMessage.includes('400')) {
-            setOtpError(t('OTP code is wrong.'));
-            console.log('Setting generic "OTP code is wrong" error.');
-          } else {
-            setOtpError(errorMessage);
-          }
-        }
+        console.log('Calling verifyOtp with:', { email, token: otpCode, userType });
+        await verifyOtp({ email, token: otpCode, userType: userType as UserType });
+        console.log('OTP verification successful, showing alert');
+        Alert.alert(
+          t('Success'), 
+          t('OTP verified successfully! Please complete your profile.'),
+          [
+            {
+              text: t('OK'),
+              onPress: () => {
+                console.log('OTP verification completed, MainRouter will handle navigation');
+              }
+            }
+          ]
+        );
       } else {
-        setOtpError(t('An error occurred. Please try again.'));
-        console.error('OTP verification failed: User type is undefined for registration flow.');
-        return;
+        setOtpError(t('An error occurred. Please try again. Missing user type or reset context.'));
       }
-    } catch (error: any) {
-      console.error('OTP verification error:', error);
-
-      if (error.response?.status === 400) {
-        setOtpError(t('OTP code is wrong.'));
-      } else if (error.message) {
-        setOtpError(error.message);
-      } else {
-        setOtpError(t('An error occurred. Please try again.'));
-      }
+    } catch (err: any) {
+      console.error('OTP verification error:', err);
+      const displayError = authStoreError || t('OTP code is wrong. Please try again.');
+      setOtpError(displayError);
     }
   };
 
@@ -203,18 +198,22 @@ const OtpScreen = () => {
                   />
                 ))}
               </View>
-              {otpError ? (
-                <Text style={styles.otpErrorText}>{otpError}</Text>
+              {otpError || authStoreError ? (
+                <Text style={styles.otpErrorText}>{otpError || authStoreError}</Text>
               ) : null}
               <Text style={styles.didntGetText}>{t("Didn't get the code?")}</Text>
               <TouchableOpacity
                 style={[styles.resendButton, isResendDisabled && styles.resendButtonDisabled]}
-                disabled={isResendDisabled}
+                disabled={isResendDisabled || isLoading}
                 onPress={handleResend}
               >
-                <Text style={[styles.resendButtonText, isResendDisabled && styles.resendButtonTextDisabled]}>
-                  {t('Resend Code')} {isResendDisabled ? `(${String(timer).padStart(2, '0')})` : ''}
-                </Text>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#C0C0C0" />
+                ) : (
+                  <Text style={[styles.resendButtonText, isResendDisabled && styles.resendButtonTextDisabled]}>
+                    {t('Resend Code')} {isResendDisabled ? `(${String(timer).padStart(2, '0')})` : ''}
+                  </Text>
+                )}
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
               <TouchableOpacity
@@ -361,4 +360,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OtpScreen;
+export default OtpScreen; 

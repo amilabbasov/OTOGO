@@ -10,6 +10,28 @@ const TabIcon: React.FC<TabIconProps> = ({ route, focused }) => {
   const getIconText = () => {
     switch (route) {
       // Driver tabs
+      case 'driverHome':
+        return '🏠';
+      case 'driverServices':
+        return '🔍';
+      case 'driverBookings':
+        return '📅';
+      case 'driverProfile':
+        return '👤';
+      
+      // Provider tabs
+      case 'providerHome':
+        return '🏠';
+      case 'providerServices':
+        return '🔧';
+      case 'providerBookings':
+        return '📅';
+      case 'providerEarnings':
+        return '💰';
+      case 'providerProfile':
+        return '👤';
+      
+      // Legacy support (if any old route names are still used)
       case 'Home':
         return '🏠';
       case 'Services':
@@ -18,12 +40,11 @@ const TabIcon: React.FC<TabIconProps> = ({ route, focused }) => {
         return '📅';
       case 'Profile':
         return '👤';
-      
-      // Provider tabs
       case 'Earnings':
         return '💰';
       
       default:
+        console.warn('Unknown route for tab icon:', route);
         return '📱';
     }
   };

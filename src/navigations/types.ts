@@ -11,7 +11,7 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
   [Routes.onboardingPager]: undefined;
   [Routes.login]: undefined;
-  [Routes.register]: { userType: UserType | null };
+  [Routes.register]: { userType: UserType | null; selectedServices?: string[] };
   [Routes.forgotPassword]: undefined;
   [Routes.otp]: { email: string; userType?: UserType; isPasswordReset?: boolean };
   [Routes.resetPassword]: { email: string; token: string };
@@ -20,6 +20,8 @@ export type AuthStackParamList = {
 export type MainStackParamList = {
   [Routes.personalInfo]: { email?: string; userType?: UserType };
   [Routes.carSelection]: { userType: UserType };
+  [Routes.products]: { userType?: UserType };
+  [Routes.branches]: { userType: UserType };
   [Routes.driverTabs]: undefined;
   [Routes.providerTabs]: undefined;
 };

@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
-import { useAuthStore } from '../../../stores/auth/authStore';
+import useAuthStore from '../../../stores/auth/authStore';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { colors } from '../../../theme/color';
 import { metrics } from '../../../theme/metrics';
@@ -27,7 +27,7 @@ const ResetPasswordScreen = () => {
   const navigation = useNavigation<AuthScreenProps<Routes.resetPassword>['navigation']>();
   const route = useRoute<AuthScreenProps<Routes.resetPassword>['route']>();
   const { email, token } = route.params;
-  const { resetPassword, isLoading } = useAuthStore();
+  const { updatePassword, isLoading } = useAuthStore();
   
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -56,13 +56,12 @@ const ResetPasswordScreen = () => {
 
   const handleResetPassword = async () => {
     if (!validateForm()) return;
-
-    const result = await resetPassword(email, token, newPassword, confirmPassword);
-
-    if (result.success) {
+    
+    try {
+      await updatePassword({ email, token, newPassword, repeatPassword: confirmPassword });
       Alert.alert(
         t('Success'),
-        result.message || t('Password has been reset successfully'),
+        t('Password has been reset successfully'),
         [
           {
             text: t('OK'),
@@ -70,8 +69,9 @@ const ResetPasswordScreen = () => {
           },
         ]
       );
-    } else {
-      Alert.alert(t('Error'), result.message || t('Failed to reset password. Please try again.'));
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || t('Failed to reset password. Please try again.');
+      Alert.alert(t('Error'), errorMessage);
     }
   };
 
