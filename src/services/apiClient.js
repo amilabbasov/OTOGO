@@ -1,4 +1,3 @@
-// services/apiClient.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -11,15 +10,35 @@ const apiClient = axios.create({
   },
 });
 
+// List of endpoints that don't require authentication
+const PUBLIC_ENDPOINTS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/drivers',
+  '/api/company-providers',
+  '/api/individual-providers',
+  '/api/drivers/complete-registration',
+  '/api/company-providers/complete-registration-company',
+  '/api/individual-providers/complete-registration-individual',
+  '/api/passwords/reset-request',
+  '/api/passwords/validate-token',
+  '/api/passwords/update-password',
+];
+
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-        console.log('Request with token:', config.url, token.substring(0, 20) + '...');
+      const isPublicEndpoint = PUBLIC_ENDPOINTS.some(endpoint => 
+        config.url.includes(endpoint)
+      );
+      
+      if (isPublicEndpoint) {
+        delete config.headers.Authorization;
       } else {
-        console.log('Request without token:', config.url);
+        const token = await AsyncStorage.getItem('userToken');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
     } catch (error) {
       console.error("Token alınarkən xəta baş verdi:", error);
@@ -37,21 +56,11 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     if (error.response) {
-      console.error("API Xətası:", error.response.status, error.response.data);
-
       if (error.response.status === 401) {
-        console.warn("401 Unauthorized: İstifadəçinin tokeni etibarsızdır. Çıxış edilir.");
         await AsyncStorage.removeItem('userToken');
-        // Qeyd: Buraya naviqasiya kodu əlavə edə bilərsiniz (məsələn, login səhifəsinə yönləndirmək üçün)
       } else if (error.response.status === 403) {
-        console.warn("403 Forbidden: İstifadəçinin tokeni etibarsızdır və ya yetkisi yoxdur.");
-        console.log("Current headers:", error.config?.headers);
         await AsyncStorage.removeItem('userToken');
       }
-    } else if (error.request) {
-      console.error("Şəbəkə Xətası: Serverə çatıla bilmədi.", error.request);
-    } else {
-      console.error("Sorğu Qurulması Xətası:", error.message);
     }
     return Promise.reject(error);
   }

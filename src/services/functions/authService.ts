@@ -17,7 +17,7 @@ const authService = {
   // ===== COMPANY PROVIDER REGISTRATION & VERIFICATION =====
   registerCompanyProvider: (userData: RegisterData) => apiClient.post('/api/company-providers', userData),
   verifyCompanyProvider: (verificationData: OtpVerificationData) => apiClient.post('/api/company-providers/verify', verificationData),
-  completeCompanyProviderProfile: (data: { name: string; surname: string; phone: string; description: string }) => 
+  completeCompanyProviderProfile: (data: { companyName: string; phone: string; description: string }) => 
     apiClient.post('/api/company-providers/complete-registration-company', data),
   resendCompanyProviderOtp: (email: string) => apiClient.post('/api/company-providers/auth/resend-code', { email }),
 

@@ -94,7 +94,14 @@ export const MainRouter = () => {
           initialRouteName = Routes.branches;
           break;
         default:
-          initialRouteName = Routes.personalInfo;
+          const hasRequiredPersonalInfo = user && user.name && user.surname && user.birthday;
+          if (!hasRequiredPersonalInfo) {
+            initialRouteName = Routes.personalInfo;
+          } else if (pendingProfileCompletion.userType === 'driver') {
+            initialRouteName = Routes.serviceSelection;
+          } else {
+            initialRouteName = Routes.products;
+          }
       }
     }
     

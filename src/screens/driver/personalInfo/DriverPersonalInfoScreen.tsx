@@ -76,11 +76,8 @@ const DriverPersonalInfoScreen = () => {
     );
     
     if (result.success) {
-
-
+      console.log('Profile completed successfully, next step:', result.nextStep);
     } else {
-      
-      
       if (result.message && result.message.includes('not found')) {
         Alert.alert(
           t('Registration Required'), 
@@ -95,7 +92,7 @@ const DriverPersonalInfoScreen = () => {
             {
               text: t('Try Again'),
               onPress: () => {
-            
+                // Retry logic could be added here
               },
               style: 'cancel'
             }
@@ -109,7 +106,7 @@ const DriverPersonalInfoScreen = () => {
             {
               text: t('OK'),
               onPress: () => {
-            
+                // Could add retry logic here
               }
             }
           ]

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import useAuthStore from '../../stores/auth/authStore';
+import useProviderServicesStore from '../../stores/provider/providerServicesStore';
 import { Routes } from '../../navigations/routes';
 import type { MainScreenProps } from '../../navigations/types';
 
@@ -21,6 +22,7 @@ const MOCK_SERVICES = [
 const ServiceSelection: React.FC = () => {
   const navigation = useNavigation<MainScreenProps<Routes.serviceSelection>['navigation']>();
   const { setPendingProfileCompletionState, userType } = useAuthStore();
+  const { updateServices, isLoading: isUpdatingServices } = useProviderServicesStore();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string[]>(['Engine Services', 'Car washing', 'Evacuator']);
 
@@ -34,26 +36,38 @@ const ServiceSelection: React.FC = () => {
     );
   };
 
-  const handleContinue = () => {
-    // Clear pending profile completion state - user is now fully authenticated
-    setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
-    
-    // Save updated user data to AsyncStorage to persist the completion
-    const currentUser = useAuthStore.getState().user;
-    if (currentUser) {
-      useAuthStore.getState().setUserData({
-        user: currentUser,
-        userType: userType || 'individual_provider',
-        pendingProfileCompletionStatus: false,
-        email: currentUser.email || ''
-      });
-    }
-    
-    // Navigate to the main app based on user type
-    if (userType === 'driver') {
-      navigation.replace(Routes.driverTabs);
-    } else {
-      navigation.replace(Routes.providerTabs);
+  const handleContinue = async () => {
+    try {
+      // For providers, update services via API
+      if (userType && (userType === 'individual_provider' || userType === 'company_provider')) {
+        // Convert service names to IDs (mock implementation)
+        const serviceIds = selected.map((_, index) => index + 1);
+        await updateServices(serviceIds, userType);
+      }
+      
+      // Clear pending profile completion state - user is now fully authenticated
+      setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
+      
+      // Save updated user data to AsyncStorage to persist the completion
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useAuthStore.getState().setUserData({
+          user: currentUser,
+          userType: userType || 'individual_provider',
+          pendingProfileCompletionStatus: false,
+          email: currentUser.email || ''
+        });
+      }
+      
+      // Navigate to the main app based on user type
+      if (userType === 'driver') {
+        navigation.replace(Routes.driverTabs);
+      } else {
+        navigation.replace(Routes.providerTabs);
+      }
+    } catch (error) {
+      console.error('Error updating services:', error);
+      Alert.alert('Error', 'Failed to update services. Please try again.');
     }
   };
 
@@ -119,11 +133,13 @@ const ServiceSelection: React.FC = () => {
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.continueBtn, selected.length === 0 && { opacity: 0.5 }]}
-          disabled={selected.length === 0}
+          style={[styles.continueBtn, (selected.length === 0 || isUpdatingServices) && { opacity: 0.5 }]}
+          disabled={selected.length === 0 || isUpdatingServices}
           onPress={handleContinue}
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>
+            {isUpdatingServices ? 'Updating...' : 'Continue'}
+          </Text>
           <Text style={styles.continueArrow}>→</Text>
         </TouchableOpacity>
       </View>

@@ -85,8 +85,8 @@ const CorporateProviderPersonalInfoScreen = () => {
     const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType, undefined, description, undefined);
     
     if (result.success) {
-
-
+      // Navigation will be handled automatically by MainRouter based on state change
+      console.log('Profile completed successfully, next step:', result.nextStep);
     } else {
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }

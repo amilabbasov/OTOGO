@@ -20,8 +20,11 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         console.warn('setToken called with empty/undefined token, skipping storage');
         return;
       }
+      console.log('Saving token to AsyncStorage:', token.substring(0, 10) + '...');
       await AsyncStorage.setItem('userToken', token);
+      console.log('Token saved successfully');
       set({ token });
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } catch (e: any) {
       console.error('Tokeni saxlamaq mümkün olmadı:', e.message);
     }
@@ -29,7 +32,9 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
   setUserData: async (userData: { user: User; userType: UserType; pendingProfileCompletionStatus: boolean; email: string }) => {
     try {
+      console.log('Saving user data to AsyncStorage:', userData);
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      console.log('User data saved successfully');
     } catch (e: any) {
       console.error('User data saxlamaq mümkün olmadı:', e.message);
     }
@@ -67,37 +72,81 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     set({ error: null });
   },
 
-  fetchUserInformation: async () => {
+  fetchUserInformation: async (forceRefresh = false) => {
     try {
       const currentUserType = get().userType;
+      const currentUser = get().user;
       
       if (!currentUserType) {
         return;
       }
       
-      // Since the /information endpoints are returning 403, let's use the stored user data
-      // The user information should already be available from login and profile completion
-      const currentUser = get().user;
-      
-      if (currentUser && currentUser.name && currentUser.surname) {
+      // Only skip API call if we have complete data and not forcing refresh
+      if (!forceRefresh && currentUser && currentUser.name && currentUser.surname && currentUser.phone) {
         console.log('User information already available from stored data:', currentUser);
-        return; // User data is already complete
+        return;
       }
       
-      // If we don't have complete user data, try to get it from AsyncStorage
-      const storedUserData = await AsyncStorage.getItem('userData');
-      if (storedUserData) {
-        const userData = JSON.parse(storedUserData);
-        if (userData.user && userData.user.name && userData.user.surname) {
-          console.log('Restoring user data from storage:', userData.user);
-          set({ user: userData.user });
-          return;
+      const token = get().token;
+      if (token) {
+        try {
+          let response;
+          switch (currentUserType) {
+            case 'driver':
+              response = await authService.getDriverInformation();
+              break;
+            case 'individual_provider':
+              response = await authService.getIndividualProviderInformation();
+              break;
+            case 'company_provider':
+              response = await authService.getCompanyProviderInformation();
+              break;
+            default:
+              console.warn('Unknown user type for fetching information:', currentUserType);
+              return;
+          }
+          
+          if (response.data) {
+            const userData = response.data;
+            const updatedUser: User = {
+              id: userData.id || currentUser?.id || '',
+              email: userData.email || currentUser?.email || '',
+              userType: currentUserType,
+              name: userData.name,
+              surname: userData.surname,
+              birthday: userData.birthday,
+              phone: userData.phone,
+              // For company providers, description contains company info
+              companyName: currentUserType === 'company_provider' ? userData.companyName : undefined,
+            };
+            
+            set({ user: updatedUser });
+            
+            await get().setUserData({
+              user: updatedUser,
+              userType: currentUserType,
+              pendingProfileCompletionStatus: get().pendingProfileCompletion.isPending,
+              email: updatedUser.email
+            });
+          }
+        } catch (apiError: any) {
+          if (apiError.response?.status === 403 || apiError.response?.status === 401) {
+            console.log('User information endpoint requires authentication, using stored data');
+            return;
+          }
+          
+          console.log('Failed to fetch user information from API:', apiError.response?.status);
+          
+          if (forceRefresh) {
+            throw apiError;
+          }
         }
       }
-      
-      console.log('No complete user data available, skipping API call due to 403 errors');
     } catch (error) {
       console.error('Failed to fetch user information:', error);
+      if (forceRefresh) {
+        throw error; // Only throw if forceRefresh is true
+      }
     }
   },
 
@@ -106,7 +155,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const response = await authService.login(credentials);
       
-
+      console.log('Login response data:', response.data);
       
       const { token, user, userType: userTypeNumber, pendingProfileCompletionStatus } = response.data;
       
@@ -126,32 +175,38 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       
 
       
+      console.log('Login successful, setting token and user data...');
       await get().setToken(token);
+      
+      console.log('Creating login user object...');
+      console.log('User from response:', user);
+      console.log('UserType:', userType);
+      
+      // Set user data immediately from login response
+      const loginUser: User = {
+        id: user?.id || '',
+        email: credentials.email,
+        userType: userType,
+        name: user?.name || '',
+        surname: user?.surname || '',
+        birthday: user?.birthday || '',
+        phone: user?.phone || '',
+        companyName: user?.companyName || undefined,
+      };
+      
+      console.log('Login user data:', loginUser);
+      console.log('About to call setUserData...');
       await get().setUserData({
-        user: user as User,
+        user: loginUser,
         userType: userType,
         pendingProfileCompletionStatus: pendingProfileCompletionStatus || false,
         email: credentials.email
       });
+      console.log('setUserData completed');
       
-      await get().fetchUserInformation();
-      
-      const updatedUser = get().user;
-      
-      const hasRequiredPersonalInfo = updatedUser && updatedUser.name && updatedUser.surname && updatedUser.birthday;
-      
-
-      let step: 'personalInfo' | 'serviceSelection' | 'products' | 'branches' | null = 'personalInfo';
-      if (hasRequiredPersonalInfo) {
-        if (pendingProfileCompletionStatus) {
-          step = 'serviceSelection'; 
-        } else {
-          step = null; 
-        }
-      }
-      
+      // Set user data in Zustand immediately
       set({
-        user: updatedUser as User,
+        user: loginUser,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -160,9 +215,28 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           isPending: pendingProfileCompletionStatus || false,
           userType: userType,
           email: credentials.email,
-          step: step
+          step: pendingProfileCompletionStatus ? 'serviceSelection' : null
         },
       });
+      
+      // Try to fetch additional user information, but don't fail if it doesn't work
+      try {
+        await get().fetchUserInformation();
+        // Update with any additional data from the API
+        const updatedUser = get().user;
+        if (updatedUser) {
+          set({ user: updatedUser });
+          await get().setUserData({
+            user: updatedUser,
+            userType: userType,
+            pendingProfileCompletionStatus: pendingProfileCompletionStatus || false,
+            email: credentials.email
+          });
+        }
+      } catch (fetchError) {
+        console.log('Failed to fetch additional user information, using login data:', fetchError);
+        // Don't fail login if fetch fails, we already have basic user data
+      }
       
       return response.data;
     } catch (error: any) {
@@ -223,6 +297,9 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       const storedToken = await AsyncStorage.getItem('userToken');
       const storedUserData = await AsyncStorage.getItem('userData');
       
+      console.log('Stored token:', storedToken ? 'exists' : 'not found');
+      console.log('Stored user data:', storedUserData ? 'exists' : 'not found');
+      
       if (storedToken) {
         set({ token: storedToken, isAuthenticated: true }); 
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
@@ -234,17 +311,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
             
 
             
-            const hasRequiredPersonalInfo = user && user.name && user.surname && user.birthday;
-            
-            let step: 'personalInfo' | 'serviceSelection' | 'products' | 'branches' | null = 'personalInfo';
-            if (hasRequiredPersonalInfo) {
-              if (pendingProfileCompletionStatus) {
-                step = 'serviceSelection';
-              } else {
-                step = null;
-              }
-            }
-            
+            // Set user data immediately from storage
             set({
               user: user as User,
               userType: userType as UserType,
@@ -252,12 +319,17 @@ const useAuthStore = create<AuthStore>((set, get) => ({
                 isPending: pendingProfileCompletionStatus || false,
                 userType: userType as UserType,
                 email: email,
-                step: step
+                step: pendingProfileCompletionStatus ? 'serviceSelection' : null
               },
             });
             
-
-            await get().fetchUserInformation();
+            // Try to fetch fresh user information, but don't fail if it doesn't work
+            try {
+              await get().fetchUserInformation();
+            } catch (fetchError) {
+              console.log('Failed to fetch fresh user information on app start, using stored data:', fetchError);
+              // Don't clear auth if fetch fails, we have stored data
+            }
           } catch (parseError) {
             console.error('Failed to parse stored user data:', parseError);
             get().clearAuth();
@@ -458,6 +530,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       let response;
       
+      console.log('Completing profile for:', { email, firstName, lastName, phone, userType, dateOfBirth, businessName });
+      
       switch (userType) {
         case 'driver':
           response = await authService.completeDriverProfile({ 
@@ -478,8 +552,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           break;
         case 'company_provider':
           response = await authService.completeCompanyProviderProfile({ 
-            name: firstName,
-            surname: lastName,
+            companyName: businessName || '',
             phone, 
             description: businessName || ''
           });
@@ -488,25 +561,44 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           throw new Error('Yanlış istifadəçi növü seçilib.');
       }
 
+      console.log('Profile completion response:', response.data);
 
+      // Extract user data from response if available
+      const responseUser = response.data?.user || response.data;
       
       // Update user object with new profile data
       const currentUser = get().user;
       const updatedUser: User = {
-        id: currentUser?.id || '',
-        email: currentUser?.email || email,
+        id: responseUser?.id || currentUser?.id || '',
+        email: responseUser?.email || currentUser?.email || email,
         userType: currentUser?.userType || userType,
         name: firstName,
         surname: lastName,
         birthday: dateOfBirth || new Date().toISOString().split('T')[0],
-        companyName: currentUser?.companyName,
+        phone: phone || currentUser?.phone,
+        // Only set companyName for company providers
+        ...(userType === 'company_provider' && { companyName: businessName }),
       };
+      
+      // Determine next step based on user type
+      let nextStep: 'serviceSelection' | 'products' | 'branches' | null = null;
+      
+      if (userType === 'driver') {
+        // Drivers go to car selection (serviceSelection step)
+        nextStep = 'serviceSelection';
+      } else if (userType === 'individual_provider') {
+        // Individual providers go to products step
+        nextStep = 'products';
+      } else if (userType === 'company_provider') {
+        // Company providers go to products step
+        nextStep = 'products';
+      }
       
       // Save updated user data to AsyncStorage
       await get().setUserData({
         user: updatedUser,
         userType: userType,
-        pendingProfileCompletionStatus: true, // Still pending for service selection
+        pendingProfileCompletionStatus: nextStep !== null, // Still pending if there's a next step
         email: email
       });
       
@@ -514,15 +606,23 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         isLoading: false, 
         error: null,
         user: updatedUser,
-        // Keep pending profile completion for service selection step
-        pendingProfileCompletion: { isPending: true, userType: userType, email: email, step: 'serviceSelection' },
+        // Set next step for navigation
+        pendingProfileCompletion: { 
+          isPending: nextStep !== null, 
+          userType: userType, 
+          email: email, 
+          step: nextStep 
+        },
         isAuthenticated: true,
         userType: userType
       });
       
-
-      return { success: true, data: response.data };
+      return { success: true, data: response.data, nextStep };
     } catch (error: any) {
+      console.error('Profile completion error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
       const errorMessage = error.response?.data?.message || 'Profil tamamlama zamanı səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       return { success: false, message: errorMessage };

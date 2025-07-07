@@ -14,6 +14,7 @@ export interface User {
   name?: string;
   surname?: string;
   birthday?: string;
+  phone?: string;
   companyName?: string;
 }
 
@@ -48,11 +49,11 @@ export interface AuthActions {
   forgotPassword: (email: string) => Promise<any>;
   resendPasswordResetOtp: (email: string) => Promise<any>;
   updatePassword: (data: { email: string; token: string; newPassword: string; repeatPassword: string }) => Promise<any>;
-  completeProfile: (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, taxId?: string) => Promise<{ success: boolean; data?: any; message?: string }>;
+  completeProfile: (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, taxId?: string) => Promise<{ success: boolean; data?: any; message?: string; nextStep?: 'serviceSelection' | 'products' | 'branches' | null }>;
   clearAuth: () => void;
   clearError: () => void;
   setPendingProfileCompletionState: (state: PendingProfileCompletionState) => void;
-  fetchUserInformation: () => Promise<void>;
+  fetchUserInformation: (forceRefresh?: boolean) => Promise<void>;
 }
 
 export interface RegisterData {

@@ -1,11 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../../../stores/auth/authStore';
 
 const SoleProviderProfileScreen = () => {
   const { t } = useTranslation();
-  const { clearAuth, user, userType } = useAuthStore();
+  const { clearAuth, user, userType, fetchUserInformation } = useAuthStore();
+
+  useEffect(() => {
+    fetchUserInformation(true);
+  }, [fetchUserInformation]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -27,6 +31,14 @@ const SoleProviderProfileScreen = () => {
     );
   };
 
+  const handleRefresh = async () => {
+    try {
+      await fetchUserInformation(true);
+    } catch (error) {
+      Alert.alert(t('Error'), t('Failed to refresh profile. Please try again.'));
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Not provided';
     try {
@@ -41,8 +53,26 @@ const SoleProviderProfileScreen = () => {
     }
   };
 
+  const getUserTypeDisplay = (type?: string) => {
+    switch (type) {
+      case 'driver':
+        return 'Driver';
+      case 'individual_provider':
+        return 'Individual Provider';
+      case 'company_provider':
+        return 'Company Provider';
+      default:
+        return type || 'Unknown';
+    }
+  };
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+      }
+    >
       <View style={styles.profileInfo}>
         <Text style={styles.title}>
           {userType === 'individual_provider'
@@ -70,8 +100,18 @@ const SoleProviderProfileScreen = () => {
             </View>
             
             <View style={styles.infoRow}>
+              <Text style={styles.label}>Phone:</Text>
+              <Text style={styles.value}>{user.phone || 'Not provided'}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
               <Text style={styles.label}>Date of Birth:</Text>
               <Text style={styles.value}>{formatDate(user.birthday)}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>User Type:</Text>
+              <Text style={styles.value}>{getUserTypeDisplay(user.userType)}</Text>
             </View>
             
             {user.companyName && (
@@ -83,6 +123,10 @@ const SoleProviderProfileScreen = () => {
           </View>
         )}
       </View>
+      
+      <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+        <Text style={styles.refreshButtonText}>{t('Refresh Profile')}</Text>
+      </TouchableOpacity>
       
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>{t('Logout')}</Text>
@@ -133,6 +177,19 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     flex: 2,
     textAlign: 'right',
+  },
+  refreshButton: {
+    backgroundColor: '#007bff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    margin: 20,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   logoutButton: {
     backgroundColor: '#FF4444',
