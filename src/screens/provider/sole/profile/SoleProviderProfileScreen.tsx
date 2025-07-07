@@ -5,7 +5,7 @@ import useAuthStore from '../../../../stores/auth/authStore';
 
 const SoleProviderProfileScreen = () => {
   const { t } = useTranslation();
-  const { clearAuth, user } = useAuthStore();
+  const { clearAuth, user, userType } = useAuthStore();
 
   const handleLogout = () => {
     Alert.alert(
@@ -19,8 +19,8 @@ const SoleProviderProfileScreen = () => {
         {
           text: t('Logout'),
           style: 'destructive',
-          onPress: async () => {
-            await clearAuth();
+          onPress: () => {
+            clearAuth();
           },
         },
       ]
@@ -31,10 +31,16 @@ const SoleProviderProfileScreen = () => {
     <View style={styles.container}>
       <View style={styles.profileInfo}>
         <Text style={styles.title}>
-          {user?.userType === 'individual_provider' ? t('Individual Provider Profile') : t('Corporate Provider Profile')}
+          {userType === 'individual_provider'
+            ? t('Individual Provider Profile')
+            : userType === 'company_provider'
+            ? t('Corporate Provider Profile')
+            : t('Provider Profile')}
         </Text>
         {user && (
-          <Text style={styles.userInfo}>{user.email}</Text>
+          <View>
+            <Text style={styles.userInfo}>{user.email}</Text>
+          </View>
         )}
       </View>
       

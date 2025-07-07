@@ -10,6 +10,8 @@ export interface User {
   id: string;
   email: string;
   userType: UserType;
+  name?: string;
+  companyName?: string;
 }
 
 export interface Service {
