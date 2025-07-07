@@ -19,7 +19,7 @@ export type AuthStackParamList = {
 
 export type MainStackParamList = {
   [Routes.personalInfo]: { email?: string; userType?: UserType };
-  [Routes.carSelection]: { userType: UserType };
+  [Routes.serviceSelection]: { userType: UserType };
   [Routes.products]: { userType?: UserType };
   [Routes.branches]: { userType: UserType };
   [Routes.driverTabs]: undefined;

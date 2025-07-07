@@ -15,7 +15,7 @@ export enum Routes {
     otp = 'otp',
     resetPassword = 'resetPassword',
     personalInfo = 'personalInfo',
-    carSelection = 'carSelection',
+    serviceSelection = 'serviceSelection',
     products = 'products',
     branches = 'branches',
     

@@ -68,7 +68,7 @@ export const MainRouter = () => {
   }
 
   if (pendingProfileCompletion.isPending) {
-    console.log('MainRouter: User has pending profile completion. Showing OTP, Personal Info, Car Selection, Products, and Branches screens.');
+    console.log('MainRouter: User has pending profile completion. Showing OTP, Personal Info, Service Selection, Products, and Branches screens.');
     console.log('MainRouter: Current state:', {
       isAuthenticated,
       token: !!token,
@@ -76,11 +76,27 @@ export const MainRouter = () => {
       pendingProfileCompletion
     });
     
-    // Determine the initial route based on authentication status
+    // Determine the initial route based on the current step
     let initialRouteName = Routes.otp;
     if (isAuthenticated && token && user) {
-      // User is authenticated, they should be on personal info screen
-      initialRouteName = Routes.personalInfo;
+      // User is authenticated, determine route based on step
+      switch (pendingProfileCompletion.step) {
+        case 'personalInfo':
+          initialRouteName = Routes.personalInfo;
+          break;
+        case 'serviceSelection':
+          initialRouteName = Routes.serviceSelection;
+          break;
+        case 'products':
+          initialRouteName = Routes.products;
+          break;
+        case 'branches':
+          initialRouteName = Routes.branches;
+          break;
+        default:
+          // Default to personal info if no step is set
+          initialRouteName = Routes.personalInfo;
+      }
     }
     
     return (
@@ -91,7 +107,7 @@ export const MainRouter = () => {
         <MainStack.Screen name={Routes.otp} component={OtpScreen} />
         <MainStack.Screen name={Routes.personalInfo} component={PersonalInfoScreen} />
         <MainStack.Screen
-          name={Routes.carSelection}
+          name={Routes.serviceSelection}
           children={() => {
             const userType = pendingProfileCompletion.userType;
             if (userType === 'driver') {

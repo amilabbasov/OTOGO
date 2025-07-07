@@ -82,12 +82,22 @@ const SoleProviderPersonalInfoScreen = () => {
   };
 
   const handleContinue = async () => {
-    if (!validateForm()) return;
+    console.log('SoleProviderPersonalInfoScreen: handleContinue called');
+    if (!validateForm()) {
+      console.log('SoleProviderPersonalInfoScreen: Form validation failed');
+      return;
+    }
+    console.log('SoleProviderPersonalInfoScreen: Form validation passed, calling completeProfile');
     const isoDate = toIsoDate(dateOfBirth);
     const result = await completeProfile(email, firstName.trim(), lastName.trim(), '', userType, isoDate, undefined, undefined);
+    console.log('SoleProviderPersonalInfoScreen: completeProfile result:', result);
     if (result.success) {
-      navigation.navigate(Routes.carSelection, { userType });
+      console.log('SoleProviderPersonalInfoScreen: Profile completion successful, navigating to serviceSelection');
+      setTimeout(() => {
+        navigation.replace(Routes.serviceSelection, { userType });
+      }, 100);
     } else {
+      console.log('SoleProviderPersonalInfoScreen: Profile completion failed:', result.message);
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }
   };
@@ -103,6 +113,11 @@ const SoleProviderPersonalInfoScreen = () => {
 
   return (
   <SafeAreaView style={styles.safeArea}>
+    {isLoading && (
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: 18, color: '#015656' }}>Loading...</Text>
+      </View>
+    )}
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={{ flex: 1 }}>
         <KeyboardAvoidingView

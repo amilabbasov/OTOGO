@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import useAuthStore from '../../stores/auth/authStore';
+import { Routes } from '../../navigations/routes';
+import type { MainScreenProps } from '../../navigations/types';
 
 const MOCK_SERVICES = [
   'Engine Services',
@@ -15,6 +19,8 @@ const MOCK_SERVICES = [
 ];
 
 const ServiceSelection: React.FC = () => {
+  const navigation = useNavigation<MainScreenProps<Routes.serviceSelection>['navigation']>();
+  const { setPendingProfileCompletionState, userType } = useAuthStore();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string[]>(['Engine Services', 'Car washing', 'Evacuator']);
 
@@ -26,6 +32,29 @@ const ServiceSelection: React.FC = () => {
     setSelected(prev =>
       prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
     );
+  };
+
+  const handleContinue = () => {
+    // Clear pending profile completion state - user is now fully authenticated
+    setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
+    
+    // Navigate to the main app based on user type
+    if (userType === 'driver') {
+      navigation.navigate(Routes.driverTabs);
+    } else {
+      navigation.navigate(Routes.providerTabs);
+    }
+  };
+
+  const handleSkip = () => {
+    // Skip also clears pending state and navigates to main app
+    setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
+    
+    if (userType === 'driver') {
+      navigation.navigate(Routes.driverTabs);
+    } else {
+      navigation.navigate(Routes.providerTabs);
+    }
   };
 
   return (
@@ -63,12 +92,13 @@ const ServiceSelection: React.FC = () => {
         </TouchableOpacity>
       </ScrollView>
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.skipBtn}>
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.continueBtn, selected.length === 0 && { opacity: 0.5 }]}
           disabled={selected.length === 0}
+          onPress={handleContinue}
         >
           <Text style={styles.continueText}>Continue</Text>
           <Text style={styles.continueArrow}>→</Text>

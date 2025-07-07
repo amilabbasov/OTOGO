@@ -12,7 +12,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   tempEmail: null,
   token: null,
   userType: null,
-  pendingProfileCompletion: { isPending: false, userType: null, email: null },
+  pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
 
   setToken: async (token: string) => {
     try {
@@ -54,7 +54,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       tempEmail: null,
       token: null,
       userType: null,
-      pendingProfileCompletion: { isPending: false, userType: null, email: null },
+      pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
     });
     get().removeToken();
   },
@@ -118,7 +118,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         pendingProfileCompletion: {
           isPending: pendingProfileCompletionStatus || false,
           userType: userType,
-          email: credentials.email
+          email: credentials.email,
+          step: 'personalInfo'
         },
       });
       return response.data;
@@ -158,7 +159,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         user: null, 
         token: null, 
         userType: null, 
-        pendingProfileCompletion: { isPending: false, userType: null, email: null } 
+        pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null } 
       });
       throw error;
     }
@@ -195,7 +196,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
               pendingProfileCompletion: {
                 isPending: pendingProfileCompletionStatus || false,
                 userType: userType as UserType,
-                email: email
+                email: email,
+                step: 'personalInfo'
               },
             });
           } catch (parseError) {
@@ -247,7 +249,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         isLoading: false, 
         error: null, 
         userType: userType,
-        pendingProfileCompletion: { isPending: true, userType: userType, email: email }
+        pendingProfileCompletion: { isPending: true, userType: userType, email: email, step: 'personalInfo' }
       }); 
       return response.data;
     } catch (error: any) {
@@ -382,7 +384,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           pendingProfileCompletion: {
             isPending: pendingProfileCompletionStatus !== false,
             userType: userType as UserType,
-            email: email
+            email: email,
+            step: 'serviceSelection'
           },
         });
         return response.data;
@@ -441,8 +444,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           throw new Error('Yanlış istifadəçi növü seçilib.');
       }
 
-      // After personal info completion, keep pending profile completion for car selection
-      console.log('Personal info completion successful, keeping pending state for car selection:', {
+      // After personal info completion, keep pending profile completion for service selection
+      console.log('Personal info completion successful, keeping pending state for service selection:', {
         userType,
         responseData: response.data
       });
@@ -450,8 +453,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       set({ 
         isLoading: false, 
         error: null,
-        // Keep pending profile completion for car selection step
-        pendingProfileCompletion: { isPending: true, userType: userType, email: email },
+        // Keep pending profile completion for service selection step
+        pendingProfileCompletion: { isPending: true, userType: userType, email: email, step: 'serviceSelection' },
         isAuthenticated: true,
         userType: userType
       });

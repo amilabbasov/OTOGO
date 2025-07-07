@@ -89,8 +89,8 @@ const CorporateProviderPersonalInfoScreen = () => {
     const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType);
     
     if (result.success) {
-      // Navigate to products selection after personal info completion
-      navigation.navigate(Routes.products, { userType });
+      // Navigate to service selection after personal info completion
+      navigation.navigate(Routes.serviceSelection, { userType });
     } else {
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }

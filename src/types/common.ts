@@ -4,6 +4,7 @@ export interface PendingProfileCompletionState {
   isPending: boolean;
   userType: UserType | null;
   email: string | null;
+  step: 'personalInfo' | 'serviceSelection' | 'products' | 'branches' | null;
 }
 
 export interface User {
