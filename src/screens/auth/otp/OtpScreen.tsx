@@ -116,11 +116,17 @@ const OtpScreen = () => {
       otpCode,
       email,
       userType,
-      isPasswordReset
+      isPasswordReset,
+      otpArray: otp
     });
 
     if (otpCode.length !== OTP_LENGTH) {
       setOtpError(t('Please enter the complete OTP code'));
+      return;
+    }
+
+    if (!otpCode || otpCode === '') {
+      setOtpError(t('Please enter the OTP code'));
       return;
     }
 
@@ -132,19 +138,7 @@ const OtpScreen = () => {
       } else if (userType) {
         console.log('Calling verifyOtp with:', { email, token: otpCode, userType });
         await verifyOtp({ email, token: otpCode, userType: userType as UserType });
-        console.log('OTP verification successful, showing alert');
-        Alert.alert(
-          t('Success'), 
-          t('OTP verified successfully! Please complete your profile.'),
-          [
-            {
-              text: t('OK'),
-              onPress: () => {
-                console.log('OTP verification completed, MainRouter will handle navigation');
-              }
-            }
-          ]
-        );
+        console.log('OTP verification successful, MainRouter will handle navigation');
       } else {
         setOtpError(t('An error occurred. Please try again. Missing user type or reset context.'));
       }
@@ -226,7 +220,16 @@ const OtpScreen = () => {
                   {isLoading ? t('Verifying...') : t('Verify')}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={() => {
+                  if (navigation.canGoBack()) {
+                    navigation.goBack();
+                  } else {
+                    useAuthStore.getState().clearAuth();
+                  }
+                }}
+              >
                 <Text style={styles.backButtonText}>{t('Back')}</Text>
               </TouchableOpacity>
             </View>

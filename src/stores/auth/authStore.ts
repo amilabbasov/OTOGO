@@ -338,7 +338,12 @@ const useAuthStore = create<AuthStore>((set, get) => ({
             throw new Error('Yanlış istifadəçi növü seçilib.');
         }
 
-        const { user, authToken, pendingProfileCompletionStatus } = response.data;
+        console.log('Raw API response data:', response.data);
+        
+        // Try to extract data with different possible field names
+        const user = response.data.user || response.data.data?.user || response.data;
+        const authToken = response.data.authToken || response.data.token || response.data.access_token || response.data.data?.token;
+        const pendingProfileCompletionStatus = response.data.pendingProfileCompletionStatus || response.data.data?.pendingProfileCompletionStatus || true;
         
         console.log('OTP verification response:', {
           user: user?.email,
@@ -346,6 +351,12 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           pendingProfileCompletionStatus,
           fullResponse: response.data
         });
+        
+        // Check if we have the minimum required data for successful verification
+        if (!user && !authToken) {
+          console.error('OTP verification failed: Missing user data and auth token');
+          throw new Error('OTP verification failed: Invalid response from server');
+        }
         
         if (authToken) {
           await get().setToken(authToken);

@@ -74,10 +74,18 @@ export const MainRouter = () => {
       user: user?.email,
       pendingProfileCompletion
     });
+    
+    // Determine the initial route based on authentication status
+    let initialRouteName = Routes.otp;
+    if (isAuthenticated && token && user) {
+      // User is authenticated, they should be on personal info screen
+      initialRouteName = Routes.personalInfo;
+    }
+    
     return (
       <MainStack.Navigator
         screenOptions={{ headerShown: false }}
-        initialRouteName={Routes.otp}
+        initialRouteName={initialRouteName}
       >
         <MainStack.Screen name={Routes.otp} component={OtpScreen} />
         <MainStack.Screen name={Routes.personalInfo} component={PersonalInfoScreen} />

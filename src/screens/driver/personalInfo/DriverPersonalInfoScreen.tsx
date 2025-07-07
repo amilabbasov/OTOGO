@@ -18,6 +18,7 @@ import { Routes } from '../../../navigations/routes';
 import useAuthStore from '../../../stores/auth/authStore';
 import { colors } from '../../../theme/color';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
+import DateOfBirthInput from '../../../components/registration/DateOfBirthInput';
 
 const DriverPersonalInfoScreen = () => {
   const { t } = useTranslation();
@@ -31,32 +32,6 @@ const DriverPersonalInfoScreen = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
-
-  const handleDateChange = (text: string) => {
-    // Remove all non-numeric characters
-    const cleaned = text.replace(/\D/g, '');
-    
-    // Format as DD/MM/YYYY
-    let formatted = cleaned;
-    if (cleaned.length >= 2) {
-      formatted = cleaned.slice(0, 2);
-      if (cleaned.length >= 4) {
-        formatted += '/' + cleaned.slice(2, 4);
-        if (cleaned.length >= 8) {
-          formatted += '/' + cleaned.slice(4, 8);
-        } else if (cleaned.length > 4) {
-          formatted += '/' + cleaned.slice(4);
-        }
-      } else if (cleaned.length > 2) {
-        formatted += '/' + cleaned.slice(2);
-      }
-    }
-    
-    // Limit to DD/MM/YYYY format (10 characters)
-    if (formatted.length <= 10) {
-      setDateOfBirth(formatted);
-    }
-  };
 
   const validateForm = () => {
     if (!firstName.trim()) {
@@ -74,56 +49,24 @@ const DriverPersonalInfoScreen = () => {
       return false;
     }
 
-    // Validate date format (DD/MM/YYYY)
-    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-    const match = dateOfBirth.match(dateRegex);
-    
-    if (!match) {
-      Alert.alert(t('Error'), t('Please enter date in DD/MM/YYYY format'));
-      return false;
-    }
-
-    const [, day, month, year] = match;
-    const dayNum = parseInt(day, 10);
-    const monthNum = parseInt(month, 10);
-    const yearNum = parseInt(year, 10);
-    const currentYear = new Date().getFullYear();
-
-    if (dayNum < 1 || dayNum > 31) {
-      Alert.alert(t('Error'), t('Please enter a valid day (01-31)'));
-      return false;
-    }
-
-    if (monthNum < 1 || monthNum > 12) {
-      Alert.alert(t('Error'), t('Please enter a valid month (01-12)'));
-      return false;
-    }
-
-    if (yearNum < 1900 || yearNum > currentYear) {
-      Alert.alert(t('Error'), t('Please enter a valid year'));
-      return false;
-    }
-
-    // Check if it's a valid date
-    const testDate = new Date(yearNum, monthNum - 1, dayNum);
-    if (testDate.getDate() !== dayNum || testDate.getMonth() !== monthNum - 1 || testDate.getFullYear() !== yearNum) {
-      Alert.alert(t('Error'), t('Please enter a valid date'));
-      return false;
-    }
-
     return true;
   };
 
+  function toIsoDate(date: string) {
+    const [day, month, year] = date.split('/');
+    return `${year}-${month}-${day}`;
+  }
+
   const handleContinue = async () => {
     if (!validateForm()) return;
-
+    const isoDate = toIsoDate(dateOfBirth);
     const result = await completeProfile(
       email, 
       firstName.trim(), 
       lastName.trim(), 
       '',
       userType,
-      dateOfBirth || new Date().toISOString().split('T')[0],
+      isoDate || new Date().toISOString().split('T')[0],
     );
     
     if (result.success) {
@@ -235,23 +178,11 @@ const DriverPersonalInfoScreen = () => {
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Date of birth*</Text>
-                  <View style={styles.inputContainer}>
-                    <SvgImage
-                      source={require('../../../assets/svg/personalInfo/calendar.svg')}
-                      width={20}
-                      height={20}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={[styles.input, styles.inputWithIcon]}
-                      value={dateOfBirth}
-                      onChangeText={handleDateChange}
-                      placeholder="DD/MM/YYYY"
-                      placeholderTextColor="#C6C6C6"
-                      keyboardType="numeric"
-                      maxLength={10}
-                    />
-                  </View>
+                  <DateOfBirthInput
+                    value={dateOfBirth}
+                    onChangeText={setDateOfBirth}
+                    placeholder="DD/MM/YYYY"
+                  />
                 </View>
               </View>
             </View>
