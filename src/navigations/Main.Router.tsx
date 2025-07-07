@@ -4,7 +4,8 @@ import DriverNavigator from './DriverNavigator';
 import SoleProviderNavigator from './SoleProviderNavigator';
 import CorporateProviderNavigator from './CorporateProviderNavigator';
 import PersonalInfoScreen from '../screens/common/PersonalInfoScreen';
-import CarSelectionScreen from '../screens/common/CarSelectionScreen';
+import CarSelectionScreen from '../screens/driver/carSelection/CarSelectionScreen';
+import SelectServicesScreen from '..//screens/common/SelectServicesScreen';
 import ProductsScreen from '../screens/common/ProductsScreen';
 import BranchesScreen from '../screens/common/BranchesScreen';
 import UserTypeSelectionScreen from '../screens/auth/onboarding/flow/UserTypeSelectionScreen';
@@ -89,7 +90,17 @@ export const MainRouter = () => {
       >
         <MainStack.Screen name={Routes.otp} component={OtpScreen} />
         <MainStack.Screen name={Routes.personalInfo} component={PersonalInfoScreen} />
-        <MainStack.Screen name={Routes.carSelection} component={CarSelectionScreen} />
+        <MainStack.Screen
+          name={Routes.carSelection}
+          children={() => {
+            const userType = pendingProfileCompletion.userType;
+            if (userType === 'driver') {
+              return <CarSelectionScreen />;
+            }
+            // For all providers, show SelectServicesScreen
+            return <SelectServicesScreen />;
+          }}
+        />
         <MainStack.Screen name={Routes.products} component={ProductsScreen} />
         <MainStack.Screen name={Routes.branches} component={BranchesScreen} />
       </MainStack.Navigator>

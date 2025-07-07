@@ -86,7 +86,7 @@ const SoleProviderPersonalInfoScreen = () => {
     const isoDate = toIsoDate(dateOfBirth);
     const result = await completeProfile(email, firstName.trim(), lastName.trim(), '', userType, isoDate, undefined, undefined);
     if (result.success) {
-      navigation.navigate(Routes.products, { userType });
+      navigation.navigate(Routes.carSelection, { userType });
     } else {
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }

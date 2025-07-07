@@ -38,9 +38,7 @@ const SoleProviderProfileScreen = () => {
             : t('Provider Profile')}
         </Text>
         {user && (
-          <View>
-            <Text style={styles.userInfo}>{user.email}</Text>
-          </View>
+          <Text style={styles.userInfo}>{user.email}</Text>
         )}
       </View>
       
