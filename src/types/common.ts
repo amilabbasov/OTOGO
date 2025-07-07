@@ -12,6 +12,8 @@ export interface User {
   email: string;
   userType: UserType;
   name?: string;
+  surname?: string;
+  birthday?: string;
   companyName?: string;
 }
 
@@ -50,6 +52,7 @@ export interface AuthActions {
   clearAuth: () => void;
   clearError: () => void;
   setPendingProfileCompletionState: (state: PendingProfileCompletionState) => void;
+  fetchUserInformation: () => Promise<void>;
 }
 
 export interface RegisterData {

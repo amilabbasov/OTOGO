@@ -38,11 +38,22 @@ const ServiceSelection: React.FC = () => {
     // Clear pending profile completion state - user is now fully authenticated
     setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
     
+    // Save updated user data to AsyncStorage to persist the completion
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser) {
+      useAuthStore.getState().setUserData({
+        user: currentUser,
+        userType: userType || 'individual_provider',
+        pendingProfileCompletionStatus: false,
+        email: currentUser.email || ''
+      });
+    }
+    
     // Navigate to the main app based on user type
     if (userType === 'driver') {
-      navigation.navigate(Routes.driverTabs);
+      navigation.replace(Routes.driverTabs);
     } else {
-      navigation.navigate(Routes.providerTabs);
+      navigation.replace(Routes.providerTabs);
     }
   };
 
@@ -50,10 +61,22 @@ const ServiceSelection: React.FC = () => {
     // Skip also clears pending state and navigates to main app
     setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
     
+    // Save updated user data to AsyncStorage to persist the completion
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser) {
+      useAuthStore.getState().setUserData({
+        user: currentUser,
+        userType: userType || 'individual_provider',
+        pendingProfileCompletionStatus: false,
+        email: currentUser.email || ''
+      });
+    }
+    
+    // Skip also navigates to main app
     if (userType === 'driver') {
-      navigation.navigate(Routes.driverTabs);
+      navigation.replace(Routes.driverTabs);
     } else {
-      navigation.navigate(Routes.providerTabs);
+      navigation.replace(Routes.providerTabs);
     }
   };
 

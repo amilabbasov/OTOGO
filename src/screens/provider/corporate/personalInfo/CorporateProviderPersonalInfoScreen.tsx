@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   TextInput,
   TouchableOpacity,
-  Platform,
   Keyboard,
   TouchableWithoutFeedback,
   Alert,
@@ -25,14 +24,9 @@ const CorporateProviderPersonalInfoScreen = () => {
   const route = useRoute<MainScreenProps<Routes.personalInfo>['route']>();
   const { completeProfile, isLoading, pendingProfileCompletion, isAuthenticated } = useAuthStore();
   
-  console.log('CorporateProviderPersonalInfoScreen render:', {
-    isAuthenticated,
-    pendingProfileCompletion: pendingProfileCompletion.isPending,
-    userType: pendingProfileCompletion.userType,
-    routeParams: route.params
-  });
+
   
-  // Get email and userType from route params or pending profile completion
+
   const email = route.params?.email || pendingProfileCompletion?.email || '';
   const userType = route.params?.userType || pendingProfileCompletion?.userType || 'company_provider';
   
@@ -86,15 +80,20 @@ const CorporateProviderPersonalInfoScreen = () => {
   const handleContinue = async () => {
     if (!validateForm()) return;
 
-    const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType);
+    // Create description from all company details
+    const description = `Company: ${companyName.trim()}\nTax ID: ${companyTaxId.trim()}\nAddress: ${companyAddress.trim()}\nPosition: ${position.trim()}`;
+    const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType, undefined, description, undefined);
     
     if (result.success) {
-      // Navigate to service selection after personal info completion
-      navigation.navigate(Routes.serviceSelection, { userType });
+
+
     } else {
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }
   };
+
+
+  const hasRequiredFields = firstName.trim() && lastName.trim() && phone.trim() && companyName.trim() && companyTaxId.trim() && companyAddress.trim() && position.trim();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -236,10 +235,10 @@ const CorporateProviderPersonalInfoScreen = () => {
             <View style={{ flex: 1, marginBottom: 20 }} />
 
             <TouchableOpacity 
-              style={[styles.continueButton, isLoading && styles.continueButtonDisabled]} 
+              style={[styles.continueButton, (!hasRequiredFields || isLoading) && styles.continueButtonDisabled]} 
               onPress={handleContinue} 
               activeOpacity={0.8}
-              disabled={isLoading}
+              disabled={!hasRequiredFields || isLoading}
             >
               <Text style={styles.continueButtonText}>
                 {isLoading ? 'Saving...' : 'Complete Registration'}

@@ -28,16 +28,26 @@ export const MainRouter = () => {
   
   const currentUserType: UserType | null = storeUserType || pendingProfileCompletion.userType;
   
-  console.log('MainRouter render. Current UserType:', currentUserType, 'Store UserType:', storeUserType, 'Token present:', !!token, 'User:', user?.email, 'Pending Profile:', pendingProfileCompletion.isPending, 'Pending UserType:', pendingProfileCompletion.userType);
+  const hasRequiredPersonalInfo = user && user.name && user.surname && user.birthday;
 
-  // Allow access to MainRouter if user is authenticated OR has pending profile completion
   if (!isAuthenticated && !pendingProfileCompletion.isPending) {
     console.warn('MainRouter: Unexpected state - not authenticated and no pending profile. This should be handled by Router.tsx');
     return null;
   }
 
+  // If user is authenticated but missing required personal info, force Personal Info screen
+  if (isAuthenticated && user && !hasRequiredPersonalInfo) {
+    return (
+      <MainStack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={Routes.personalInfo}
+      >
+        <MainStack.Screen name={Routes.personalInfo} component={PersonalInfoScreen} />
+      </MainStack.Navigator>
+    );
+  }
+
   if (pendingProfileCompletion.isPending && !pendingProfileCompletion.userType) {
-    console.log('MainRouter: Pending profile completion and no userType selected yet. Showing UserType selection.');
     return (
       <MainStack.Navigator
         screenOptions={{ headerShown: false }}
@@ -54,7 +64,6 @@ export const MainRouter = () => {
                   'company_provider': 'company_provider'
                 };
                 const mappedUserType = userTypeMap[selectedUserType] || 'driver';
-                console.log('User selected userType:', selectedUserType, 'mapped to:', mappedUserType);
                 setPendingProfileCompletionState({ 
                   ...pendingProfileCompletion,
                   userType: mappedUserType, 
@@ -68,18 +77,9 @@ export const MainRouter = () => {
   }
 
   if (pendingProfileCompletion.isPending) {
-    console.log('MainRouter: User has pending profile completion. Showing OTP, Personal Info, Service Selection, Products, and Branches screens.');
-    console.log('MainRouter: Current state:', {
-      isAuthenticated,
-      token: !!token,
-      user: user?.email,
-      pendingProfileCompletion
-    });
     
-    // Determine the initial route based on the current step
     let initialRouteName = Routes.otp;
     if (isAuthenticated && token && user) {
-      // User is authenticated, determine route based on step
       switch (pendingProfileCompletion.step) {
         case 'personalInfo':
           initialRouteName = Routes.personalInfo;
@@ -94,7 +94,6 @@ export const MainRouter = () => {
           initialRouteName = Routes.branches;
           break;
         default:
-          // Default to personal info if no step is set
           initialRouteName = Routes.personalInfo;
       }
     }
@@ -113,7 +112,6 @@ export const MainRouter = () => {
             if (userType === 'driver') {
               return <CarSelectionScreen />;
             }
-            // For all providers, show SelectServicesScreen
             return <SelectServicesScreen />;
           }}
         />
@@ -123,11 +121,9 @@ export const MainRouter = () => {
     );
   }
 
-  // User is fully authenticated, show appropriate navigator
   let initialRouteName: string;
   try {
     initialRouteName = getInitialRouteForUserType(currentUserType);
-    console.log('MainRouter: User is fully authenticated. Decided initial route name:', initialRouteName);
   } catch (error) {
     console.error('MainRouter: Invalid user type, logging out user:', error);
     useAuthStore.getState().clearAuth();
@@ -140,32 +136,19 @@ export const MainRouter = () => {
       initialRouteName={initialRouteName}
     >
       {currentUserType === 'driver' ? (
-        <>
-          {console.log('MainRouter: User is DRIVER. Rendering DriverNavigator.')}
-          <MainStack.Screen name={Routes.driverTabs} component={DriverNavigator} />
-        </>
+        <MainStack.Screen name={Routes.driverTabs} component={DriverNavigator} />
       ) : currentUserType === 'individual_provider' ? (
-        <>
-          {console.log('MainRouter: User is INDIVIDUAL_PROVIDER. Rendering SoleProviderNavigator.')}
-          <MainStack.Screen name={Routes.providerTabs} component={SoleProviderNavigator} />
-        </>
+        <MainStack.Screen name={Routes.providerTabs} component={SoleProviderNavigator} />
       ) : currentUserType === 'company_provider' ? (
-        <>
-          {console.log('MainRouter: User is COMPANY_PROVIDER. Rendering CorporateProviderNavigator.')}
-          <MainStack.Screen name={Routes.providerTabs} component={CorporateProviderNavigator} />
-        </>
+        <MainStack.Screen name={Routes.providerTabs} component={CorporateProviderNavigator} />
       ) : (
-        <>
-          {console.warn('MainRouter: Unknown or null user type. Defaulting to DriverNavigator.', currentUserType)}
-          <MainStack.Screen name={Routes.driverTabs} component={DriverNavigator} />
-        </>
+        <MainStack.Screen name={Routes.driverTabs} component={DriverNavigator} />
       )}
     </MainStack.Navigator>
   );
 };
 
 const getInitialRouteForUserType = (userType: UserType | null): string => {
-  console.log('getInitialRouteForUserType called with:', userType);
   switch (userType) {
     case 'driver':
       return Routes.driverTabs;

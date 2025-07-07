@@ -31,6 +31,7 @@ const DriverPersonalInfoScreen = () => {
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
 
   const validateForm = () => {
@@ -41,6 +42,11 @@ const DriverPersonalInfoScreen = () => {
     
     if (!lastName.trim()) {
       Alert.alert(t('Error'), t('Please enter your last name'));
+      return false;
+    }
+    
+    if (!phone.trim()) {
+      Alert.alert(t('Error'), t('Please enter your phone number'));
       return false;
     }
     
@@ -64,16 +70,16 @@ const DriverPersonalInfoScreen = () => {
       email, 
       firstName.trim(), 
       lastName.trim(), 
-      '',
+      phone.trim(),
       userType,
       isoDate || new Date().toISOString().split('T')[0],
     );
     
     if (result.success) {
-      // Navigate to car selection after personal info completion
-      navigation.navigate(Routes.carSelection, { userType });
+
+
     } else {
-      console.log('Profile completion failed:', result.message);
+      
       
       if (result.message && result.message.includes('not found')) {
         Alert.alert(
@@ -89,7 +95,7 @@ const DriverPersonalInfoScreen = () => {
             {
               text: t('Try Again'),
               onPress: () => {
-                console.log('User chose to retry profile completion');
+            
               },
               style: 'cancel'
             }
@@ -103,7 +109,7 @@ const DriverPersonalInfoScreen = () => {
             {
               text: t('OK'),
               onPress: () => {
-                console.log('Profile completion error acknowledged by user');
+            
               }
             }
           ]
@@ -111,6 +117,8 @@ const DriverPersonalInfoScreen = () => {
       }
     }
   };
+
+  const hasRequiredFields = firstName.trim() && lastName.trim() && phone.trim() && dateOfBirth.trim();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -177,6 +185,21 @@ const DriverPersonalInfoScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Phone number*</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={[styles.input, styles.inputWithIcon]}
+                      value={phone}
+                      onChangeText={setPhone}
+                      placeholder="Enter your phone number"
+                      placeholderTextColor="#C6C6C6"
+                      keyboardType="phone-pad"
+                      autoComplete="tel"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
                   <Text style={styles.label}>Date of birth*</Text>
                   <DateOfBirthInput
                     value={dateOfBirth}
@@ -190,10 +213,10 @@ const DriverPersonalInfoScreen = () => {
             <View style={{ flex: 1, marginBottom: 20 }} />
 
             <TouchableOpacity 
-              style={[styles.continueButton, isLoading && styles.continueButtonDisabled]} 
+              style={[styles.continueButton, (!hasRequiredFields || isLoading) && styles.continueButtonDisabled]} 
               onPress={handleContinue} 
               activeOpacity={0.8}
-              disabled={isLoading}
+              disabled={!hasRequiredFields || isLoading}
             >
               <Text style={styles.continueButtonText}>
                 {isLoading ? 'Saving...' : 'Complete Registration'}

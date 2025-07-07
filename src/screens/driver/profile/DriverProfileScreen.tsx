@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../../stores/auth/authStore';
 
@@ -33,24 +33,65 @@ const UserProfileScreen = () => {
     );
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Not provided';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.profileInfo}>
-        <Text style={styles.title}>{t('User Profile')}</Text>
+        <Text style={styles.title}>{t('Driver Profile')}</Text>
+        
         {user ? (
-          <View>
-            <Text style={styles.userInfo}>{t('Email')}: {user.email}</Text>
-            <Text style={styles.userInfo}>{t('User Type')}: {t(user.userType)}</Text>
+          <View style={styles.userDetails}>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Name:</Text>
+              <Text style={styles.value}>{user.name || 'Not provided'}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Surname:</Text>
+              <Text style={styles.value}>{user.surname || 'Not provided'}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Email:</Text>
+              <Text style={styles.value}>{user.email}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Date of Birth:</Text>
+              <Text style={styles.value}>{formatDate(user.birthday)}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>User Type:</Text>
+              <Text style={styles.value}>{t(user.userType)}</Text>
+            </View>
           </View>
         ) : (
           <Text style={styles.userInfo}>{t('User data not available.')}</Text>
         )}
       </View>
       
+      {/* <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+        <Text style={styles.refreshButtonText}>{t('Refresh Profile')}</Text>
+      </TouchableOpacity> */}
+      
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>{t('Logout')}</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -58,18 +99,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 20,
   },
   profileInfo: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: 20,
     alignItems: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#015656',
-    marginBottom: 10,
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  userDetails: {
+    width: '100%',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#495057',
+    flex: 1,
+  },
+  value: {
+    fontSize: 16,
+    color: '#6c757d',
+    flex: 2,
+    textAlign: 'right',
   },
   userInfo: {
     fontSize: 16,
@@ -77,13 +144,27 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textAlign: 'center',
   },
+
+  refreshButton: {
+    backgroundColor: '#015656',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    margin: 20,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   logoutButton: {
     backgroundColor: '#FF4444',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
-    marginBottom: 20,
+    margin: 20,
   },
   logoutButtonText: {
     color: '#fff',

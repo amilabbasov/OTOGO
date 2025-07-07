@@ -112,13 +112,7 @@ const OtpScreen = () => {
     const otpCode = otp.join('');
     setOtpError('');
 
-    console.log('OTP verification attempt:', {
-      otpCode,
-      email,
-      userType,
-      isPasswordReset,
-      otpArray: otp
-    });
+
 
     if (otpCode.length !== OTP_LENGTH) {
       setOtpError(t('Please enter the complete OTP code'));
@@ -136,9 +130,7 @@ const OtpScreen = () => {
         Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
         navigation.navigate(Routes.resetPassword, { email, token: otpCode });
       } else if (userType) {
-        console.log('Calling verifyOtp with:', { email, token: otpCode, userType });
         await verifyOtp({ email, token: otpCode, userType: userType as UserType });
-        console.log('OTP verification successful, MainRouter will handle navigation');
       } else {
         setOtpError(t('An error occurred. Please try again. Missing user type or reset context.'));
       }

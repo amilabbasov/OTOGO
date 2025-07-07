@@ -4,7 +4,6 @@ import TabIcon from '../components/navigation/TabIcon';
 
 import SoleProviderHomeScreen from '../screens/provider/sole/home/SoleProviderHomeScreen';
 import SoleProviderProfileScreen from '../screens/provider/sole/profile/SoleProviderProfileScreen';
-import SoleProviderServicesScreen from '../screens/provider/sole/services/SoleProviderServicesScreen'; 
 import SoleProviderBookingsScreen from '../screens/provider/sole/bookings/SoleProviderBookingsScreen';
 import SoleProviderEarningsScreen from '../screens/provider/sole/earnings/SoleProviderEarningsScreen';
 import { Routes } from './routes';
@@ -39,11 +38,6 @@ const SoleProviderNavigator = () => {
         name={Routes.providerHome} 
         component={SoleProviderHomeScreen}
         options={{ tabBarLabel: 'Home' }}
-      />
-      <Tab.Screen 
-        name={Routes.providerServices} 
-        component={SoleProviderServicesScreen}
-        options={{ tabBarLabel: 'Services' }}
       />
       <Tab.Screen 
         name={Routes.providerBookings} 

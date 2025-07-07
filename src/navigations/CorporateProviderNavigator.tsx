@@ -4,7 +4,6 @@ import TabIcon from '../components/navigation/TabIcon';
 
 import CorporateProviderHomeScreen from '../screens/provider/corporate/home/CorporateProviderHomeScreen';
 import CorporateProviderProfileScreen from '../screens/provider/corporate/profile/CorporateProviderProfileScreen';
-import CorporateProviderServicesScreen from '../screens/provider/corporate/services/CorporateProviderServicesScreen'; 
 import CorporateProviderBookingsScreen from '../screens/provider/corporate/bookings/CorporateProviderBookingsScreen';
 import CorporateProviderEarningsScreen from '../screens/provider/corporate/earnings/CorporateProviderEarningsScreen';
 import { Routes } from './routes';
@@ -39,11 +38,6 @@ const CorporateProviderNavigator = () => {
         name={Routes.providerHome} 
         component={CorporateProviderHomeScreen}
         options={{ tabBarLabel: 'Home' }}
-      />
-      <Tab.Screen 
-        name={Routes.providerServices} 
-        component={CorporateProviderServicesScreen}
-        options={{ tabBarLabel: 'Services' }}
       />
       <Tab.Screen 
         name={Routes.providerBookings} 

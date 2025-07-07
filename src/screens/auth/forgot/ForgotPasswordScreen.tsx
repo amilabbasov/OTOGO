@@ -51,7 +51,7 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
   };
 
   const handleNeedHelp = () => {
-    console.log('Need help pressed');
+
   };
 
   return (

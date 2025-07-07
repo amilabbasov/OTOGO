@@ -17,7 +17,7 @@ const authService = {
   // ===== COMPANY PROVIDER REGISTRATION & VERIFICATION =====
   registerCompanyProvider: (userData: RegisterData) => apiClient.post('/api/company-providers', userData),
   verifyCompanyProvider: (verificationData: OtpVerificationData) => apiClient.post('/api/company-providers/verify', verificationData),
-  completeCompanyProviderProfile: (data: { companyName: string; phone: string; description: string }) => 
+  completeCompanyProviderProfile: (data: { name: string; surname: string; phone: string; description: string }) => 
     apiClient.post('/api/company-providers/complete-registration-company', data),
   resendCompanyProviderOtp: (email: string) => apiClient.post('/api/company-providers/auth/resend-code', { email }),
 
@@ -36,6 +36,11 @@ const authService = {
 
   // ===== SERVICES MANAGEMENT =====
   getServices: () => apiClient.get('/api/services'),
+
+  // ===== USER PROFILE MANAGEMENT =====
+  getDriverInformation: () => apiClient.get('/api/drivers/information'),
+  getIndividualProviderInformation: () => apiClient.get('/api/individual-providers/information'),
+  getCompanyProviderInformation: () => apiClient.get('/api/company-providers/information'),
 
   // ===== PROVIDER SERVICES MANAGEMENT =====
   updateIndividualProviderServices: (serviceIds: number[]) => apiClient.post('/api/individual-providers/services', { serviceIds }),

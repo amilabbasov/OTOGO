@@ -17,6 +17,9 @@ apiClient.interceptors.request.use(
       const token = await AsyncStorage.getItem('userToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Request with token:', config.url, token.substring(0, 20) + '...');
+      } else {
+        console.log('Request without token:', config.url);
       }
     } catch (error) {
       console.error("Token alınarkən xəta baş verdi:", error);
@@ -40,6 +43,10 @@ apiClient.interceptors.response.use(
         console.warn("401 Unauthorized: İstifadəçinin tokeni etibarsızdır. Çıxış edilir.");
         await AsyncStorage.removeItem('userToken');
         // Qeyd: Buraya naviqasiya kodu əlavə edə bilərsiniz (məsələn, login səhifəsinə yönləndirmək üçün)
+      } else if (error.response.status === 403) {
+        console.warn("403 Forbidden: İstifadəçinin tokeni etibarsızdır və ya yetkisi yoxdur.");
+        console.log("Current headers:", error.config?.headers);
+        await AsyncStorage.removeItem('userToken');
       }
     } else if (error.request) {
       console.error("Şəbəkə Xətası: Serverə çatıla bilmədi.", error.request);

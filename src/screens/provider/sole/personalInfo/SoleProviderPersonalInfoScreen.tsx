@@ -40,6 +40,7 @@ const SoleProviderPersonalInfoScreen = () => {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [address, setAddress] = useState('');
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -66,8 +67,8 @@ const SoleProviderPersonalInfoScreen = () => {
       Alert.alert(t('Error'), t('Please enter your last name'));
       return false;
     }
-    if (!email.trim()) {
-      Alert.alert(t('Error'), t('Please enter your email'));
+    if (!phone.trim()) {
+      Alert.alert(t('Error'), t('Please enter your phone number'));
       return false;
     }
     if (!dateOfBirth.trim()) {
@@ -82,27 +83,23 @@ const SoleProviderPersonalInfoScreen = () => {
   };
 
   const handleContinue = async () => {
-    console.log('SoleProviderPersonalInfoScreen: handleContinue called');
+  
     if (!validateForm()) {
-      console.log('SoleProviderPersonalInfoScreen: Form validation failed');
+
       return;
     }
-    console.log('SoleProviderPersonalInfoScreen: Form validation passed, calling completeProfile');
     const isoDate = toIsoDate(dateOfBirth);
-    const result = await completeProfile(email, firstName.trim(), lastName.trim(), '', userType, isoDate, undefined, undefined);
-    console.log('SoleProviderPersonalInfoScreen: completeProfile result:', result);
+    // Create description from address and work hours
+    const description = `${address.trim()}\nWork Hours: ${JSON.stringify(workHours)}`;
+    const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType, isoDate, description, undefined);
     if (result.success) {
-      console.log('SoleProviderPersonalInfoScreen: Profile completion successful, navigating to serviceSelection');
-      setTimeout(() => {
-        navigation.replace(Routes.serviceSelection, { userType });
-      }, 100);
+
+      // Navigation will be handled automatically by MainRouter based on state change
     } else {
-      console.log('SoleProviderPersonalInfoScreen: Profile completion failed:', result.message);
+      
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }
   };
-
-  const isFormValid = firstName && lastName && email && dateOfBirth && address;
 
   const BUTTON_HEIGHT = 56;
   const BUTTON_BOTTOM_MARGIN = 10;
@@ -110,6 +107,8 @@ const SoleProviderPersonalInfoScreen = () => {
   const SAFE_AREA_BOTTOM_INSET = Platform.OS === 'ios' ? 20 : 0;
   const totalButtonSpace = BUTTON_HEIGHT + BUTTON_BOTTOM_MARGIN + SAFE_AREA_BOTTOM_INSET;
 
+  // Check if all required fields are filled (name, surname, phone, birthday are mandatory)
+  const hasRequiredFields = firstName.trim() && lastName.trim() && phone.trim() && dateOfBirth.trim();
 
   return (
   <SafeAreaView style={styles.safeArea}>
@@ -204,6 +203,19 @@ const SoleProviderPersonalInfoScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Phone number*</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="Enter your phone number"
+                    placeholderTextColor="#C6C6C6"
+                    keyboardType="phone-pad"
+                    autoComplete="tel"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
                   <Text style={styles.label}>Date of birth*</Text>
                   <DateOfBirthInput
                     value={dateOfBirth}
@@ -235,13 +247,13 @@ const SoleProviderPersonalInfoScreen = () => {
         </KeyboardAvoidingView>
         <View style={styles.fixedButtonArea}>
           <TouchableOpacity
-            style={[styles.continueButton, (!isFormValid || isLoading) && styles.continueButtonDisabled]}
+            style={[styles.continueButton, (!hasRequiredFields || isLoading) && styles.continueButtonDisabled]}
             onPress={handleContinue}
             activeOpacity={0.8}
-            disabled={!isFormValid || isLoading}
+            disabled={!hasRequiredFields || isLoading}
           >
-            <Text style={[styles.continueButtonText, (!isFormValid || isLoading) && { color: '#fff' }]}>Continue</Text>
-            <Text style={[styles.continueButtonArrow, (!isFormValid || isLoading) && { color: '#fff' }]}>→</Text>
+            <Text style={[styles.continueButtonText, (!hasRequiredFields || isLoading) && { color: '#fff' }]}>Continue</Text>
+            <Text style={[styles.continueButtonArrow, (!hasRequiredFields || isLoading) && { color: '#fff' }]}>→</Text>
           </TouchableOpacity>
         </View>
       </View>
