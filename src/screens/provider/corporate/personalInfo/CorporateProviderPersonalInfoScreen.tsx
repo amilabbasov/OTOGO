@@ -30,47 +30,17 @@ const CorporateProviderPersonalInfoScreen = () => {
   const email = route.params?.email || pendingProfileCompletion?.email || '';
   const userType = route.params?.userType || pendingProfileCompletion?.userType || 'company_provider';
   
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [companyTaxId, setCompanyTaxId] = useState('');
-  const [companyAddress, setCompanyAddress] = useState('');
-  const [position, setPosition] = useState('');
+  const [phone, setPhone] = useState('');
 
   const validateForm = () => {
-    if (!firstName.trim()) {
-      Alert.alert(t('Error'), t('Please enter your first name'));
-      return false;
-    }
-    
-    if (!lastName.trim()) {
-      Alert.alert(t('Error'), t('Please enter your last name'));
+    if (!companyName.trim()) {
+      Alert.alert(t('Error'), t('Please enter your company name'));
       return false;
     }
     
     if (!phone.trim()) {
       Alert.alert(t('Error'), t('Please enter your phone number'));
-      return false;
-    }
-    
-    if (!companyName.trim()) {
-      Alert.alert(t('Error'), t('Please enter your company name'));
-      return false;
-    }
-
-    if (!companyTaxId.trim()) {
-      Alert.alert(t('Error'), t('Please enter your company tax ID'));
-      return false;
-    }
-
-    if (!companyAddress.trim()) {
-      Alert.alert(t('Error'), t('Please enter your company address'));
-      return false;
-    }
-
-    if (!position.trim()) {
-      Alert.alert(t('Error'), t('Please enter your position in the company'));
       return false;
     }
 
@@ -80,9 +50,12 @@ const CorporateProviderPersonalInfoScreen = () => {
   const handleContinue = async () => {
     if (!validateForm()) return;
 
-    // Create description from all company details
-    const description = `Company: ${companyName.trim()}\nTax ID: ${companyTaxId.trim()}\nAddress: ${companyAddress.trim()}\nPosition: ${position.trim()}`;
-    const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType, undefined, description, undefined);
+    // Add diagnostic check before API call
+    const { checkAuthenticationState } = useAuthStore.getState();
+    checkAuthenticationState();
+
+    // For corporate provider, we only need company name and phone
+    const result = await completeProfile(email, '', '', phone.trim(), userType, undefined, companyName.trim(), undefined);
     
     if (result.success) {
       // Navigation will be handled automatically by MainRouter based on state change
@@ -93,7 +66,7 @@ const CorporateProviderPersonalInfoScreen = () => {
   };
 
 
-  const hasRequiredFields = firstName.trim() && lastName.trim() && phone.trim() && companyName.trim() && companyTaxId.trim() && companyAddress.trim() && position.trim();
+  const hasRequiredFields = companyName.trim() && phone.trim();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -103,41 +76,13 @@ const CorporateProviderPersonalInfoScreen = () => {
             <View style={styles.contentPadding}>
               <View style={styles.header}>
                 <Text style={styles.title}>Corporate Provider</Text>
-                <Text style={styles.title}>Information</Text>
+                <Text style={styles.title}>Setup</Text>
                 <Text style={styles.subtitle}>
-                  Please fill in your company information to complete your corporate provider profile
+                  Please provide your company name and phone number to get started
                 </Text>
               </View>
 
               <View style={styles.form}>
-                <View style={styles.nameRow}>
-                  <View style={styles.nameInputGroup}>
-                    <Text style={styles.label}>First name*</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      placeholder="Enter your first name"
-                      placeholderTextColor="#C6C6C6"
-                      autoCapitalize="words"
-                      autoComplete="given-name"
-                    />
-                  </View>
-                  
-                  <View style={styles.nameInputGroup}>
-                    <Text style={styles.label}>Last name*</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={lastName}
-                      onChangeText={setLastName}
-                      placeholder="Enter your last name"
-                      placeholderTextColor="#C6C6C6"
-                      autoCapitalize="words"
-                      autoComplete="family-name"
-                    />
-                  </View>
-                </View>
-
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>E-mail*</Text>
                   <View style={styles.inputContainer}>
@@ -160,21 +105,6 @@ const CorporateProviderPersonalInfoScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Phone number*</Text>
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      style={[styles.input, styles.inputWithIcon]}
-                      value={phone}
-                      onChangeText={setPhone}
-                      placeholder="Enter your phone number"
-                      placeholderTextColor="#C6C6C6"
-                      keyboardType="phone-pad"
-                      autoComplete="tel"
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
                   <Text style={styles.label}>Company name*</Text>
                   <View style={styles.inputContainer}>
                     <TextInput
@@ -189,43 +119,16 @@ const CorporateProviderPersonalInfoScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Company tax ID*</Text>
+                  <Text style={styles.label}>Phone number*</Text>
                   <View style={styles.inputContainer}>
                     <TextInput
                       style={[styles.input, styles.inputWithIcon]}
-                      value={companyTaxId}
-                      onChangeText={setCompanyTaxId}
-                      placeholder="Enter company tax ID"
+                      value={phone}
+                      onChangeText={setPhone}
+                      placeholder="Enter your phone number"
                       placeholderTextColor="#C6C6C6"
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Company address*</Text>
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      style={[styles.input, styles.inputWithIcon]}
-                      value={companyAddress}
-                      onChangeText={setCompanyAddress}
-                      placeholder="Enter company address"
-                      placeholderTextColor="#C6C6C6"
-                      multiline
-                      numberOfLines={2}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Your position*</Text>
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      style={[styles.input, styles.inputWithIcon]}
-                      value={position}
-                      onChangeText={setPosition}
-                      placeholder="Enter your position"
-                      placeholderTextColor="#C6C6C6"
-                      autoCapitalize="words"
+                      keyboardType="phone-pad"
+                      autoComplete="tel"
                     />
                   </View>
                 </View>

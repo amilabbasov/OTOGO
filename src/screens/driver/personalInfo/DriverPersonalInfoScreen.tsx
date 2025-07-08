@@ -64,7 +64,35 @@ const DriverPersonalInfoScreen = () => {
   }
 
   const handleContinue = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
+
+    // Add diagnostic check before API call
+    const { checkAuthenticationState, validateProfileCompletionState } = useAuthStore.getState();
+    checkAuthenticationState();
+    
+    const validation = validateProfileCompletionState();
+    if (!validation.isValid) {
+      Alert.alert(
+        t('Error'),
+        t('Unable to complete profile: ') + validation.errors.join(', '),
+        [
+          {
+            text: t('Go to Registration'),
+            onPress: () => {
+              clearAuth();
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('Profile completion warnings:', validation.warnings);
+    }
+
     const isoDate = toIsoDate(dateOfBirth);
     const result = await completeProfile(
       email, 

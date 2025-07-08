@@ -3,6 +3,7 @@ export enum Routes {
     onboarding = 'onboarding',
     auth = 'auth',
     main = 'main',
+    mainApp = 'mainApp',
     
     // Onboarding routes
     onboardingPager = 'onboardingPager',

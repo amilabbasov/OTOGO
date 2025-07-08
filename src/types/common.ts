@@ -16,6 +16,7 @@ export interface User {
   birthday?: string;
   phone?: string;
   companyName?: string;
+  description?: string;
 }
 
 export interface Service {
@@ -54,6 +55,8 @@ export interface AuthActions {
   clearError: () => void;
   setPendingProfileCompletionState: (state: PendingProfileCompletionState) => void;
   fetchUserInformation: (forceRefresh?: boolean) => Promise<void>;
+  checkAuthenticationState: () => AuthState;
+  validateProfileCompletionState: () => { isValid: boolean; errors: string[]; warnings: string[] };
 }
 
 export interface RegisterData {

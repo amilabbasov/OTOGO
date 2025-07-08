@@ -64,8 +64,8 @@ const carTypes: CarType[] = [
 
 const CarSelectionScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation<MainScreenProps<Routes.carSelection>['navigation']>();
-  const route = useRoute<MainScreenProps<Routes.carSelection>['route']>();
+  const navigation = useNavigation<MainScreenProps<Routes.serviceSelection>['navigation']>();
+  const route = useRoute<MainScreenProps<Routes.serviceSelection>['route']>();
   const { setPendingProfileCompletionState } = useAuthStore();
   const [selectedCarType, setSelectedCarType] = useState<string | null>(null);
 
@@ -88,7 +88,12 @@ const CarSelectionScreen = () => {
           text: t('OK'),
           onPress: () => {
             // Mark profile completion as done - this will trigger MainRouter to show the main app
-            setPendingProfileCompletionState({ isPending: false, userType: null, email: null });
+            setPendingProfileCompletionState({ 
+              isPending: false, 
+              userType: null, 
+              email: null, 
+              step: null 
+            });
           }
         }
       ]

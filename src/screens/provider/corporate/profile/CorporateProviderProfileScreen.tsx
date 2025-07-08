@@ -5,11 +5,14 @@ import useAuthStore from '../../../../stores/auth/authStore';
 
 const CorporateProviderProfileScreen = () => {
   const { t } = useTranslation();
-  const { clearAuth, user, fetchUserInformation } = useAuthStore();
+  const { clearAuth, user, fetchUserInformation, userType } = useAuthStore();
 
   useEffect(() => {
-    fetchUserInformation(true);
-  }, [fetchUserInformation]);
+    // Only fetch user information if we don't have basic info (company name and phone for corporate providers)
+    if (!user || !user.companyName || !user.phone) {
+      fetchUserInformation(true);
+    }
+  }, [fetchUserInformation, user]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -53,7 +56,7 @@ const CorporateProviderProfileScreen = () => {
     }
   };
 
-  const getUserTypeDisplay = (type?: string) => {
+  const getUserTypeDisplay = (type?: string | null) => {
     switch (type) {
       case 'driver':
         return 'Driver';
@@ -75,19 +78,14 @@ const CorporateProviderProfileScreen = () => {
     >
       <View style={styles.profileInfo}>
         <Text style={styles.title}>
-          {user?.userType === 'company_provider' ? t('Company Provider Profile') : t('Corporate Provider Profile')}
+          {t('Corporate Provider Profile')}
         </Text>
         
         {user && (
           <View style={styles.userDetails}>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>Name:</Text>
-              <Text style={styles.value}>{user.name || 'Not provided'}</Text>
-            </View>
-            
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Surname:</Text>
-              <Text style={styles.value}>{user.surname || 'Not provided'}</Text>
+              <Text style={styles.label}>Company Name:</Text>
+              <Text style={styles.value}>{user.companyName || 'Not provided'}</Text>
             </View>
             
             <View style={styles.infoRow}>
@@ -101,19 +99,14 @@ const CorporateProviderProfileScreen = () => {
             </View>
             
             <View style={styles.infoRow}>
-              <Text style={styles.label}>Date of Birth:</Text>
-              <Text style={styles.value}>{formatDate(user.birthday)}</Text>
-            </View>
-            
-            <View style={styles.infoRow}>
               <Text style={styles.label}>User Type:</Text>
-              <Text style={styles.value}>{getUserTypeDisplay(user.userType)}</Text>
+              <Text style={styles.value}>{getUserTypeDisplay(userType)}</Text>
             </View>
             
-            {user.companyName && (
+            {user.description && (
               <View style={styles.infoRow}>
-                <Text style={styles.label}>Company:</Text>
-                <Text style={styles.value}>{user.companyName}</Text>
+                <Text style={styles.label}>Description:</Text>
+                <Text style={styles.value}>{user.description}</Text>
               </View>
             )}
           </View>

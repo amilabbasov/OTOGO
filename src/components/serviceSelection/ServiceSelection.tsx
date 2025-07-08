@@ -46,7 +46,12 @@ const ServiceSelection: React.FC = () => {
       }
       
       // Clear pending profile completion state - user is now fully authenticated
-      setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
+      setPendingProfileCompletionState({ 
+        isPending: false, 
+        userType: null, 
+        email: null, 
+        step: null 
+      });
       
       // Save updated user data to AsyncStorage to persist the completion
       const currentUser = useAuthStore.getState().user;
@@ -73,7 +78,12 @@ const ServiceSelection: React.FC = () => {
 
   const handleSkip = () => {
     // Skip also clears pending state and navigates to main app
-    setPendingProfileCompletionState({ isPending: false, userType: null, email: null, step: null });
+    setPendingProfileCompletionState({ 
+      isPending: false, 
+      userType: null, 
+      email: null, 
+      step: null 
+    });
     
     // Save updated user data to AsyncStorage to persist the completion
     const currentUser = useAuthStore.getState().user;

@@ -8,8 +8,11 @@ const SoleProviderProfileScreen = () => {
   const { clearAuth, user, userType, fetchUserInformation } = useAuthStore();
 
   useEffect(() => {
-    fetchUserInformation(true);
-  }, [fetchUserInformation]);
+    // Only fetch user information if we don't have basic info
+    if (!user || !user.name || !user.surname) {
+      fetchUserInformation(true);
+    }
+  }, [fetchUserInformation, user]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -53,7 +56,7 @@ const SoleProviderProfileScreen = () => {
     }
   };
 
-  const getUserTypeDisplay = (type?: string) => {
+  const getUserTypeDisplay = (type?: string | null) => {
     switch (type) {
       case 'driver':
         return 'Driver';
@@ -111,7 +114,7 @@ const SoleProviderProfileScreen = () => {
             
             <View style={styles.infoRow}>
               <Text style={styles.label}>User Type:</Text>
-              <Text style={styles.value}>{getUserTypeDisplay(user.userType)}</Text>
+              <Text style={styles.value}>{getUserTypeDisplay(userType)}</Text>
             </View>
             
             {user.companyName && (

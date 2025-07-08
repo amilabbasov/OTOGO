@@ -16,27 +16,42 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
   setToken: async (token: string) => {
     try {
-      if (!token) {
-        console.warn('setToken called with empty/undefined token, skipping storage');
+      if (!token || token.trim() === '') {
+        console.warn('setToken: Boş token daxil edildi.');
+        await get().removeToken(); // Boş tokeni silək
         return;
       }
-      console.log('Saving token to AsyncStorage:', token.substring(0, 10) + '...');
       await AsyncStorage.setItem('userToken', token);
-      console.log('Token saved successfully');
-      set({ token });
+      set({ token, isAuthenticated: true }); // Token təyin edildikdə isAuthenticated true olsun
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log('Token uğurla saxlandı.');
+      
+      // Verify token was saved correctly
+      const savedToken = await AsyncStorage.getItem('userToken');
+      console.log('setToken: Token verification - saved correctly:', !!savedToken);
     } catch (e: any) {
-      console.error('Tokeni saxlamaq mümkün olmadı:', e.message);
+      console.error('setToken: Tokeni saxlamaq mümkün olmadı:', e.message);
     }
   },
 
-  setUserData: async (userData: { user: User; userType: UserType; pendingProfileCompletionStatus: boolean; email: string }) => {
+  // Bu funksiya həm store-dakı `user` obyektini, həm də `AsyncStorage`-i yeniləyir.
+  // pendingProfileCompletionStatus yalnız `AsyncStorage` üçün vacibdir.
+  setUserData: async (data: { user: User; userType: UserType; pendingProfileCompletionStatus: boolean; email: string }) => {
     try {
-      console.log('Saving user data to AsyncStorage:', userData);
-      await AsyncStorage.setItem('userData', JSON.stringify(userData));
-      console.log('User data saved successfully');
+      set({
+        user: data.user,
+        userType: data.userType,
+        pendingProfileCompletion: {
+          ...get().pendingProfileCompletion, // Mevcut pending state'i koru
+          isPending: data.pendingProfileCompletionStatus,
+          userType: data.userType, // UserType'ı daima doğru set et
+          email: data.email
+        }
+      });
+      await AsyncStorage.setItem('userData', JSON.stringify(data));
+      console.log('setUserData: İstifadəçi məlumatları uğurla yeniləndi.');
     } catch (e: any) {
-      console.error('User data saxlamaq mümkün olmadı:', e.message);
+      console.error('setUserData: İstifadəçi məlumatlarını saxlamaq mümkün olmadı:', e.message);
     }
   },
 
@@ -44,9 +59,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userData');
-      set({ token: null });
+      delete apiClient.defaults.headers.common['Authorization']; // Axios headerini da təmizlə
+      console.log('removeToken: Token və istifadəçi məlumatları silindi.');
     } catch (e: any) {
-      console.error('Tokeni silmək mümkün olmadı:', e.message);
+      console.error('removeToken: Tokeni silmək mümkün olmadı:', e.message);
     }
   },
 
@@ -61,92 +77,134 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       userType: null,
       pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
     });
-    get().removeToken();
+    get().removeToken(); // AsyncStorage və Axios headerini təmizlə
+    console.log('clearAuth: Autentifikasiya vəziyyəti təmizləndi.');
   },
 
   setPendingProfileCompletionState: (state: PendingProfileCompletionState) => {
     set({ pendingProfileCompletion: state });
+    console.log('setPendingProfileCompletionState: Pending profile state yeniləndi:', state);
   },
 
   clearError: () => {
     set({ error: null });
+    console.log('clearError: Xəta vəziyyəti təmizləndi.');
   },
 
   fetchUserInformation: async (forceRefresh = false) => {
+    const { token, userType: currentUserType, user, pendingProfileCompletion } = get();
+
+    if (!token || !currentUserType) {
+      console.warn('fetchUserInformation: Token və ya istifadəçi növü mövcud deyil, məlumatlar çəkilmir.');
+      set({ isLoading: false }); // Loading state-i söndür
+      if (!token && get().isAuthenticated) get().clearAuth(); // Token yoxdursa və isAuthenticated true-dursa təmizlə
+      return;
+    }
+
+    // For corporate providers, basic info is company name and phone
+    // For other user types, basic info is name and surname
+    const hasBasicInfo = currentUserType === 'company_provider' 
+      ? (user && user.companyName && user.phone)
+      : (user && user.name && user.surname);
+
+    // Yalnız forceRefresh olmadıqda VƏ əsas məlumatlar artıq mövcuddursa API çağırışından qaçın.
+    // Lakin, əgər pendingProfileCompletion.isPending true-dursa, bu o deməkdir ki, məlumatlar dəyişə bilər,
+    // ona görə də API-dən çəkmək vacibdir.
+    if (!forceRefresh && hasBasicInfo && !pendingProfileCompletion.isPending) {
+      console.log('fetchUserInformation: Əsas profil məlumatları mövcuddur, API çağırışı atlandı.');
+      set({ isLoading: false }); // Loading state-i söndür
+      return;
+    }
+
+    set({ isLoading: true, error: null });
     try {
-      const currentUserType = get().userType;
-      const currentUser = get().user;
+      let response;
+      console.log('fetchUserInformation: Çəkilən currentUserType:', currentUserType);
+      switch (currentUserType) {
+        case 'driver':
+          response = await authService.getDriverInformation();
+          break;
+        case 'individual_provider':
+          response = await authService.getIndividualProviderInformation();
+          break;
+        case 'company_provider':
+          response = await authService.getCompanyProviderInformation();
+          break;
+        default:
+          console.error('fetchUserInformation: Naməlum istifadəçi növü:', currentUserType);
+          get().clearAuth();
+          return;
+      }
+
+      const apiUserData = response.data;
+
+      // Profil tamamlama vəziyyətini API cavabına əsasən müəyyənləşdiririk.
+      // Bu, `completeProfile` API cavabından sonra `isPending` dəyərini düzgün təyin etməyə kömək edir.
+      // For corporate providers, basic info is company name and phone
+      // For other user types, basic info is name and surname
+      const hasBasicInfo = currentUserType === 'company_provider' 
+        ? (apiUserData && apiUserData.companyName && apiUserData.phone)
+        : (apiUserData && apiUserData.name && apiUserData.surname);
+
+      const newPendingState: PendingProfileCompletionState = {
+        isPending: !hasBasicInfo, // Əgər əsas məlumatlar yoxdursa, isPending true
+        userType: !hasBasicInfo ? currentUserType : null, // Əsas məlumatlar yoxdursa, userType təyin et
+        email: apiUserData?.email || '',
+        step: !hasBasicInfo ? 'personalInfo' : null // Əsas məlumatlar yoxdursa, personalInfo addımına get
+      };
+
+      // Store-u və AsyncStorage-i yeni məlumatlarla və pending statusu ilə yenilə.
+      await get().setUserData({
+        user: apiUserData,
+        userType: currentUserType,
+        pendingProfileCompletionStatus: newPendingState.isPending,
+        email: newPendingState.email ?? ''
+      });
+
+      set({
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        pendingProfileCompletion: newPendingState,
+      });
+
+      console.log('fetchUserInformation: İstifadəçi məlumatları uğurla çəkildi.');
+
+    } catch (error: any) {
+      console.error('fetchUserInformation: Məlumatları çəkərkən xəta:', error.response?.status, error.message);
+      console.error('fetchUserInformation: Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
       
-      if (!currentUserType) {
+      set({
+        error: error.response?.data?.message || 'Profil məlumatlarını yükləmək mümkün olmadı.',
+        isLoading: false
+      });
+      
+      // Handle different error scenarios
+      if (error?.response?.status === 400) {
+        console.warn('fetchUserInformation: 400 error - this might indicate profile is not complete or user not found');
+        // For 400 errors, we should not clear auth but maybe set pending profile completion
+        const currentState = get();
+        set({
+          pendingProfileCompletion: {
+            isPending: true,
+            userType: currentState.userType,
+            email: currentState.user?.email || '',
+            step: 'personalInfo' // Açıq şəkildə personalInfo addımını təyin et
+          }
+        });
+        // Don't throw error for 400 - this is expected for incomplete profiles
         return;
+      } else if (error?.response?.status === 401 || error?.response?.status === 403) {
+        console.warn('fetchUserInformation: Autentifikasiya xətası, çıxış edilir.');
+        get().clearAuth();
       }
-      
-      // Only skip API call if we have complete data and not forcing refresh
-      if (!forceRefresh && currentUser && currentUser.name && currentUser.surname && currentUser.phone) {
-        console.log('User information already available from stored data:', currentUser);
-        return;
-      }
-      
-      const token = get().token;
-      if (token) {
-        try {
-          let response;
-          switch (currentUserType) {
-            case 'driver':
-              response = await authService.getDriverInformation();
-              break;
-            case 'individual_provider':
-              response = await authService.getIndividualProviderInformation();
-              break;
-            case 'company_provider':
-              response = await authService.getCompanyProviderInformation();
-              break;
-            default:
-              console.warn('Unknown user type for fetching information:', currentUserType);
-              return;
-          }
-          
-          if (response.data) {
-            const userData = response.data;
-            const updatedUser: User = {
-              id: userData.id || currentUser?.id || '',
-              email: userData.email || currentUser?.email || '',
-              userType: currentUserType,
-              name: userData.name,
-              surname: userData.surname,
-              birthday: userData.birthday,
-              phone: userData.phone,
-              // For company providers, description contains company info
-              companyName: currentUserType === 'company_provider' ? userData.companyName : undefined,
-            };
-            
-            set({ user: updatedUser });
-            
-            await get().setUserData({
-              user: updatedUser,
-              userType: currentUserType,
-              pendingProfileCompletionStatus: get().pendingProfileCompletion.isPending,
-              email: updatedUser.email
-            });
-          }
-        } catch (apiError: any) {
-          if (apiError.response?.status === 403 || apiError.response?.status === 401) {
-            console.log('User information endpoint requires authentication, using stored data');
-            return;
-          }
-          
-          console.log('Failed to fetch user information from API:', apiError.response?.status);
-          
-          if (forceRefresh) {
-            throw apiError;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch user information:', error);
-      if (forceRefresh) {
-        throw error; // Only throw if forceRefresh is true
-      }
+      throw error; // Komponentdə idarə olunması üçün xətanı yenidən at
     }
   },
 
@@ -154,140 +212,72 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authService.login(credentials);
-      
-      console.log('Login response data:', response.data);
-      
-      const { token, user, userType: userTypeNumber, pendingProfileCompletionStatus } = response.data;
-      
-      // Map numeric userType to string
-      const userTypeMap: { [key: number]: UserType } = {
-        2: 'driver',
-        3: 'company_provider', 
-        4: 'individual_provider'
-      };
-      
-      const userType = userTypeMap[userTypeNumber];
-      
-      if (!userType) {
-        console.error('Invalid userType received:', userTypeNumber);
-        throw new Error('Invalid user type received from server');
-      }
-      
+      const { token, user: loginUserData, userType: responseUserTypeNumber } = response.data;
 
-      
-      console.log('Login successful, setting token and user data...');
-      await get().setToken(token);
-      
-      console.log('Creating login user object...');
-      console.log('User from response:', user);
-      console.log('UserType:', userType);
-      
-      // Set user data immediately from login response
-      const loginUser: User = {
-        id: user?.id || '',
-        email: credentials.email,
-        userType: userType,
-        name: user?.name || '',
-        surname: user?.surname || '',
-        birthday: user?.birthday || '',
-        phone: user?.phone || '',
-        companyName: user?.companyName || undefined,
+      const userTypeMap: { [key: number]: UserType } = {
+        2: 'driver', 3: 'company_provider', 4: 'individual_provider'
       };
-      
-      console.log('Login user data:', loginUser);
-      console.log('About to call setUserData...');
+      const userType = userTypeMap[responseUserTypeNumber];
+      if (!userType) throw new Error('Düzgün olmayan istifadəçi növü cavabı.');
+
+      // Tokeni saxla və apiClient başlığını təyin et
+      await get().setToken(token);
+
+      // Login cavabından gələn ilkin məlumatları store-a və storage-ə yaz
+      // Bu, fetchUserInformation çağırılana qədər UI-də əsas məlumatların olmasını təmin edir.
       await get().setUserData({
-        user: loginUser,
+        user: loginUserData,
         userType: userType,
-        pendingProfileCompletionStatus: pendingProfileCompletionStatus || false,
+        pendingProfileCompletionStatus: response.data.pendingProfileCompletionStatus || false, // Serverdən gələn pending statusu
         email: credentials.email
       });
-      console.log('setUserData completed');
-      
-      // Set user data in Zustand immediately
-      set({
-        user: loginUser,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-        userType: userType,
-        pendingProfileCompletion: {
-          isPending: pendingProfileCompletionStatus || false,
-          userType: userType,
-          email: credentials.email,
-          step: pendingProfileCompletionStatus ? 'serviceSelection' : null
-        },
-      });
-      
-      // Try to fetch additional user information, but don't fail if it doesn't work
+
+      // Login-dən sonra profilin tam olub-olmadığını yoxlayaq
       try {
-        await get().fetchUserInformation();
-        // Update with any additional data from the API
-        const updatedUser = get().user;
-        if (updatedUser) {
-          set({ user: updatedUser });
-          await get().setUserData({
-            user: updatedUser,
-            userType: userType,
-            pendingProfileCompletionStatus: pendingProfileCompletionStatus || false,
-            email: credentials.email
+        await get().fetchUserInformation(true); // forceRefresh=true ilə
+      } catch (fetchError: any) {
+        // Əgər 400 xətası alırıqsa, bu o deməkdir ki, profil tam deyil
+        if (fetchError?.response?.status === 400) {
+          console.warn('login: Profile information incomplete, setting pending profile completion');
+          set({
+            pendingProfileCompletion: {
+              isPending: true,
+              userType: userType,
+              email: credentials.email,
+              step: 'personalInfo' // Açıq şəkildə personalInfo addımını təyin et
+            }
           });
+        } else {
+          // Digər xətalar üçün yenidən at
+          throw fetchError;
         }
-      } catch (fetchError) {
-        console.log('Failed to fetch additional user information, using login data:', fetchError);
-        // Don't fail login if fetch fails, we already have basic user data
       }
-      
+
       return response.data;
     } catch (error: any) {
-      let errorMessage = 'Login failed. Please try again.';
-      
-      if (error.response) {
-        const { status, data } = error.response;
-        
-        switch (status) {
-          case 400:
-            errorMessage = data?.message || 'Yanlış məlumat daxil edilib.';
-            break;
-          case 401:
-            errorMessage = data?.message || 'Email və ya şifrə yanlışdır.';
-            break;
-          case 404:
-            errorMessage = data?.message || 'İstifadəçi tapılmadı.';
-            break;
-          case 422:
-            errorMessage = data?.message || 'Məlumatlar düzgün deyil.';
-            break;
-          case 500:
-            errorMessage = 'Server xətası. Zəhmət olmasa daha sonra yenidən cəhd edin.';
-            break;
-          default:
-            errorMessage = data?.message || 'Daxil olma zamanı səhv baş verdi.';
-        }
-      } else if (error.request) {
-        errorMessage = 'Şəbəkə xətası. İnternet bağlantınızı yoxlayın.';
-      }
-      
-      set({ 
-        error: errorMessage, 
-        isLoading: false, 
-        isAuthenticated: false, 
-        user: null, 
-        token: null, 
-        userType: null, 
-        pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null } 
+      console.error('login: Giriş xətası:', error);
+      const errorMessage = error.response?.data?.message || 'Giriş uğursuz oldu. Zəhmət olmasa yenidən cəhd edin.';
+      set({
+        error: errorMessage,
+        isLoading: false,
+        isAuthenticated: false,
+        user: null, token: null, userType: null,
+        pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null }
       });
       throw error;
     }
   },
 
   logout: async () => {
+    set({ isLoading: true }); // Logout zamanı loading göstər
     try {
-      await authService.logout(); 
+      await authService.logout();
+      console.log('logout: Backend-dən uğurlu çıxış.');
     } catch (error) {
-      console.error('Logout API call failed:', error);
+      console.error('logout: Backend-dən çıxış API çağırışı uğursuz oldu:', error);
     } finally {
-      get().clearAuth();
+      get().clearAuth(); // Hər halda lokal vəziyyəti təmizlə
+      console.log('logout: Lokal autentifikasiya vəziyyəti təmizləndi.');
     }
   },
 
@@ -295,56 +285,81 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const storedToken = await AsyncStorage.getItem('userToken');
-      const storedUserData = await AsyncStorage.getItem('userData');
-      
-      console.log('Stored token:', storedToken ? 'exists' : 'not found');
-      console.log('Stored user data:', storedUserData ? 'exists' : 'not found');
-      
-      if (storedToken) {
-        set({ token: storedToken, isAuthenticated: true }); 
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-        
-        if (storedUserData) {
-          try {
-            const userData = JSON.parse(storedUserData);
-            const { user, userType, pendingProfileCompletionStatus, email } = userData;
-            
+      const storedUserDataStr = await AsyncStorage.getItem('userData');
 
-            
-            // Set user data immediately from storage
-            set({
-              user: user as User,
-              userType: userType as UserType,
-              pendingProfileCompletion: {
-                isPending: pendingProfileCompletionStatus || false,
-                userType: userType as UserType,
-                email: email,
-                step: pendingProfileCompletionStatus ? 'serviceSelection' : null
-              },
-            });
-            
-            // Try to fetch fresh user information, but don't fail if it doesn't work
-            try {
-              await get().fetchUserInformation();
-            } catch (fetchError) {
-              console.log('Failed to fetch fresh user information on app start, using stored data:', fetchError);
-              // Don't clear auth if fetch fails, we have stored data
+      if (storedToken) {
+        await get().setToken(storedToken); // Tokeni set et və Axios headerini təyin et
+
+        if (storedUserDataStr) {
+          try {
+            const storedUserData = JSON.parse(storedUserDataStr);
+
+            // Validate stored data structure
+            if (!storedUserData.user || !storedUserData.userType || !storedUserData.email) {
+              console.warn('initializeAuth: Yaddaşda saxlanmış məlumatlar natamam, təmizlənir');
+              get().clearAuth();
+              return;
             }
+
+            // İlk olaraq stored user data-nı store-a qoy (yüklənmə zamanı boş görünməsin)
+            set({
+              user: storedUserData.user as User,
+              userType: storedUserData.userType as UserType,
+              pendingProfileCompletion: {
+                isPending: storedUserData.pendingProfileCompletionStatus || false,
+                userType: storedUserData.userType as UserType,
+                email: storedUserData.email,
+                step: storedUserData.pendingProfileCompletionStatus ? 'personalInfo' : null // Məntiqi burda saxlaya bilərik
+              }
+            });
+
+            // Sonra API-dən ən son və tam məlumatları çək
+            try {
+              await get().fetchUserInformation(true);
+            } catch (fetchError: any) {
+              // Əgər 400 xətası alırıqsa, bu o deməkdir ki, profil tam deyil
+              if (fetchError?.response?.status === 400) {
+                console.warn('initializeAuth: Profile information incomplete, setting pending profile completion');
+                set({
+                  pendingProfileCompletion: {
+                    isPending: true,
+                    userType: storedUserData.userType as UserType,
+                    email: storedUserData.email,
+                    step: 'personalInfo'
+                  }
+                });
+              } else {
+                // Digər xətalar üçün auth təmizlə
+                console.error('initializeAuth: API xətası, auth təmizlənir:', fetchError);
+                get().clearAuth();
+              }
+            }
+
           } catch (parseError) {
-            console.error('Failed to parse stored user data:', parseError);
+            console.error('initializeAuth: Yaddaşda saxlanmış istifadəçi məlumatları zədələnib:', parseError);
             get().clearAuth();
           }
         } else {
-          console.warn('No stored user data found and no getCurrentUser API available. User will need to re-login.');
-          get().clearAuth();
+          // Token var, lakin user data yoxdur. Bu halda token expired ola bilər
+          // və ya server tərəfindən məlumatlar silinmiş ola bilər.
+          // Tokenlə birbaşa məlumatı çəkməyə cəhd et. Uğursuz olsa təmizlə.
+          console.warn('initializeAuth: Token mövcuddur, lakin istifadəçi məlumatları yoxdur. Serverdən məlumat çəkiləcək.');
+          try {
+            await get().fetchUserInformation(true);
+          } catch (e) {
+            console.error('initializeAuth: Tokenlə məlumat çəkmək mümkün olmadı, auth təmizlənir.', e);
+            get().clearAuth();
+          }
         }
       } else {
+        // Token yoxdursa, isAuthenticated false olsun
         set({ isAuthenticated: false, token: null });
         delete apiClient.defaults.headers.common['Authorization'];
+        console.log('initializeAuth: Token yoxdur, autentifikasiya edilməyib.');
       }
     } catch (error) {
-      console.error('Autentifikasiya başlatılamadı (yerli token oxunarkən səhv):', error);
-      get().clearAuth(); 
+      console.error('initializeAuth: Başlatma zamanı xəta:', error);
+      get().clearAuth();
     } finally {
       set({ isLoading: false });
     }
@@ -356,7 +371,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       let response;
       const { userType, email, password, repeatPassword, selectedServices } = userData;
 
-      set({ tempEmail: email });
+      set({ tempEmail: email, userType: userType }); // Qeydiyyatda tempEmail və userType təyin et
 
       switch (userType) {
         case 'driver':
@@ -369,17 +384,24 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           response = await authService.registerIndividualProvider({ email, password, repeatPassword, selectedServices, userType });
           break;
         default:
-          throw new Error('Yanlış istifadəçi növü seçilib.');
+          throw new Error('register: Yanlış istifadəçi növü seçilib.');
       }
 
-      set({ 
-        isLoading: false, 
-        error: null, 
-        userType: userType,
-        pendingProfileCompletion: { isPending: true, userType: userType, email: email, step: 'personalInfo' }
-      }); 
+      set({
+        isLoading: false,
+        error: null,
+        // Qeydiyyatdan sonra avtomatik olaraq pendingProfileCompletion statusunu təyin edirik
+        pendingProfileCompletion: {
+          isPending: true,
+          userType: userType,
+          email: email,
+          step: 'personalInfo'
+        }
+      });
+      console.log('register: Uğurlu qeydiyyat.');
       return response.data;
     } catch (error: any) {
+      console.error('register: Qeydiyyat zamanı xəta:', error);
       const errorMessage = error.response?.data?.message || 'Qeydiyyat zamanı səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -401,11 +423,13 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           response = await authService.resendIndividualProviderOtp(email);
           break;
         default:
-          throw new Error('Yanlış istifadəçi növü seçilib, OTP yenidən göndərilə bilmədi.');
+          throw new Error('resendOtp: Yanlış istifadəçi növü seçilib, OTP yenidən göndərilə bilmədi.');
       }
       set({ isLoading: false, error: null });
+      console.log('resendOtp: OTP uğurla yenidən göndərildi.');
       return response.data;
     } catch (error: any) {
+      console.error('resendOtp: OTP-ni yenidən göndərmək mümkün olmadı:', error);
       const errorMessage = error.response?.data?.message || 'OTP-ni yenidən göndərmək mümkün olmadı.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -417,8 +441,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const response = await authService.requestPasswordReset(email);
       set({ isLoading: false, error: null, tempEmail: email });
+      console.log('forgotPassword: Şifrə sıfırlama kodu göndərildi.');
       return response.data;
     } catch (error: any) {
+      console.error('forgotPassword: Şifrə sıfırlama kodu göndərilərkən səhv:', error);
       const errorMessage = error.response?.data?.message || 'Şifrə sıfırlama kodu göndərilərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -430,8 +456,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const response = await authService.resendPasswordResetOtp(email);
       set({ isLoading: false, error: null });
+      console.log('resendPasswordResetOtp: Şifrə sıfırlama OTP-si uğurla yenidən göndərildi.');
       return response.data;
     } catch (error: any) {
+      console.error('resendPasswordResetOtp: OTP kodu yenidən göndərilərkən səhv:', error);
       const errorMessage = error.response?.data?.message || 'OTP kodu yenidən göndərilərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -446,11 +474,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
       if (isPasswordReset) {
         response = await authService.validatePasswordResetToken(email, token);
-        set({
-          isLoading: false,
-          error: null,
-          tempEmail: null,
-        });
+        set({ isLoading: false, error: null, tempEmail: null });
+        console.log('verifyOtp: Şifrə sıfırlama OTP-si təsdiqləndi.');
         return response.data;
       } else {
         switch (userType) {
@@ -464,48 +489,43 @@ const useAuthStore = create<AuthStore>((set, get) => ({
             response = await authService.verifyIndividualProvider({ email, token, userType });
             break;
           default:
-            throw new Error('Yanlış istifadəçi növü seçilib.');
+            throw new Error('verifyOtp: Yanlış istifadəçi növü seçilib.');
         }
 
-        // Try to extract data with different possible field names
-        const user = response.data.user || response.data.data?.user || response.data;
         const authToken = response.data.authToken || response.data.token || response.data.access_token || response.data.data?.token;
-        const pendingProfileCompletionStatus = response.data.pendingProfileCompletionStatus || response.data.data?.pendingProfileCompletionStatus || true;
-        
-        // Check if we have the minimum required data for successful verification
-        if (!user && !authToken) {
-          throw new Error('OTP verification failed: Invalid response from server');
+        const user = response.data.user || response.data.data?.user || response.data;
+
+        if (!authToken) {
+          throw new Error('OTP təsdiqləmə uğursuz oldu: cavabda token yoxdur.');
         }
-        
-        if (authToken) {
-          await get().setToken(authToken);
-        }
-        
-        // Store user data for app initialization
+
+        await get().setToken(authToken); // Tokeni saxla və header-i təyin et
+
+        // OTP təsdiqləndikdən sonra ilkin məlumatları və pending statusunu təyin et
         await get().setUserData({
           user: user as User,
           userType: userType as UserType,
-          pendingProfileCompletionStatus: pendingProfileCompletionStatus !== false,
+          pendingProfileCompletionStatus: true, // OTP-dən sonra profilin tamamlanması gözlənilir
           email: email
         });
-        
+
         set({
-          user: user as User,
           isAuthenticated: true,
           isLoading: false,
           error: null,
           tempEmail: null,
-          userType: userType as UserType,
-          pendingProfileCompletion: {
-            isPending: pendingProfileCompletionStatus !== false,
-            userType: userType as UserType,
+          pendingProfileCompletion: { // OTP-dən sonra personalInfo addımına keç
+            isPending: true,
+            userType: userType,
             email: email,
-            step: 'serviceSelection'
-          },
+            step: 'personalInfo'
+          }
         });
+        console.log('verifyOtp: OTP uğurla təsdiqləndi.');
         return response.data;
       }
     } catch (error: any) {
+      console.error('verifyOtp: OTP təsdiqlənərkən xəta:', error);
       const errorMessage = error.response?.data?.message || 'OTP təsdiqlənərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -517,8 +537,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const response = await authService.updatePassword(data);
       set({ isLoading: false, error: null });
+      console.log('updatePassword: Şifrə uğurla yeniləndi.');
       return response.data;
     } catch (error: any) {
+      console.error('updatePassword: Şifrə yenilənərkən xəta:', error);
       const errorMessage = error.response?.data?.message || 'Şifrə yenilənərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -527,106 +549,244 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
   completeProfile: async (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, taxId?: string) => {
     set({ isLoading: true, error: null });
+    
+    // Add diagnostic logging
+    const currentState = get();
+    console.log('completeProfile: Current state check:', {
+      isAuthenticated: currentState.isAuthenticated,
+      token: currentState.token ? 'present' : 'missing',
+      userType: currentState.userType,
+      pendingProfileCompletion: currentState.pendingProfileCompletion,
+      userHasData: currentState.user ? {
+        id: currentState.user.id,
+        email: currentState.user.email,
+        name: currentState.user.name,
+        surname: currentState.user.surname,
+        phone: currentState.user.phone,
+        birthday: currentState.user.birthday
+      } : 'no user data'
+    });
+
+    // Validate state before proceeding
+    const validation = get().validateProfileCompletionState();
+    if (!validation.isValid) {
+      const errorMessage = `Profile completion validation failed: ${validation.errors.join(', ')}`;
+      console.error('completeProfile:', errorMessage);
+      set({ error: errorMessage, isLoading: false });
+      return { success: false, message: errorMessage };
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('completeProfile: Warnings:', validation.warnings);
+    }
+
     try {
       let response;
-      
-      console.log('Completing profile for:', { email, firstName, lastName, phone, userType, dateOfBirth, businessName });
-      
+
       switch (userType) {
         case 'driver':
-          response = await authService.completeDriverProfile({ 
+          console.log('completeProfile: Calling driver complete profile API with data:', {
             name: firstName, 
-            surname: lastName, 
-            birthday: dateOfBirth || new Date().toISOString().split('T')[0], 
-            phone: phone || ''
+            surname: lastName,
+            birthday: dateOfBirth || new Date().toISOString().split('T')[0],
+            phone: phone || '',
+            email: email
+          });
+          response = await authService.completeDriverProfile({
+            name: firstName, surname: lastName,
+            birthday: dateOfBirth || new Date().toISOString().split('T')[0],
+            phone: phone || '',
+            email: email
           });
           break;
         case 'individual_provider':
-          response = await authService.completeIndividualProviderProfile({ 
+          console.log('completeProfile: Calling individual provider complete profile API with data:', {
             name: firstName, 
-            surname: lastName, 
+            surname: lastName,
             description: businessName || '', 
-            phone, 
-            birthday: dateOfBirth || new Date().toISOString().split('T')[0]
+            phone,
+            birthday: dateOfBirth || new Date().toISOString().split('T')[0],
+            email: email
+          });
+          response = await authService.completeIndividualProviderProfile({
+            name: firstName, surname: lastName,
+            description: businessName || '', phone,
+            birthday: dateOfBirth || new Date().toISOString().split('T')[0],
+            email: email
           });
           break;
         case 'company_provider':
-          response = await authService.completeCompanyProviderProfile({ 
-            companyName: businessName || '',
+          console.log('completeProfile: Calling company provider complete profile API with data:', {
+            companyName: businessName || '', 
             phone, 
-            description: businessName || ''
+            description: `Company: ${businessName || ''}`, // Simple description with company name
+            email: email
+          });
+          response = await authService.completeCompanyProviderProfile({
+            companyName: businessName || '', 
+            phone, 
+            description: `Company: ${businessName || ''}`, // Simple description with company name
+            email: email
           });
           break;
         default:
-          throw new Error('Yanlış istifadəçi növü seçilib.');
+          throw new Error('completeProfile: Yanlış istifadəçi növü seçilib.');
       }
 
-      console.log('Profile completion response:', response.data);
+      console.log('completeProfile: API response received:', {
+        status: response.status,
+        data: response.data
+      });
 
-      // Extract user data from response if available
-      const responseUser = response.data?.user || response.data;
+      const apiUserData = response.data?.user || response.data;
       
-      // Update user object with new profile data
-      const currentUser = get().user;
-      const updatedUser: User = {
-        id: responseUser?.id || currentUser?.id || '',
-        email: responseUser?.email || currentUser?.email || email,
-        userType: currentUser?.userType || userType,
-        name: firstName,
-        surname: lastName,
-        birthday: dateOfBirth || new Date().toISOString().split('T')[0],
-        phone: phone || currentUser?.phone,
-        // Only set companyName for company providers
-        ...(userType === 'company_provider' && { companyName: businessName }),
-      };
-      
-      // Determine next step based on user type
+      // Check if profile is complete based on user type
+      const hasRequiredPersonalInfo = userType === 'company_provider'
+        ? (apiUserData && apiUserData.companyName && apiUserData.phone)
+        : (apiUserData && apiUserData.name && apiUserData.surname && apiUserData.phone && apiUserData.birthday);
+
       let nextStep: 'serviceSelection' | 'products' | 'branches' | null = null;
-      
-      if (userType === 'driver') {
-        // Drivers go to car selection (serviceSelection step)
+      if (userType === 'driver' && hasRequiredPersonalInfo) {
         nextStep = 'serviceSelection';
-      } else if (userType === 'individual_provider') {
-        // Individual providers go to products step
-        nextStep = 'products';
-      } else if (userType === 'company_provider') {
-        // Company providers go to products step
+      } else if ((userType === 'individual_provider' || userType === 'company_provider') && hasRequiredPersonalInfo) {
         nextStep = 'products';
       }
-      
-      // Save updated user data to AsyncStorage
+
       await get().setUserData({
-        user: updatedUser,
+        user: apiUserData,
         userType: userType,
-        pendingProfileCompletionStatus: nextStep !== null, // Still pending if there's a next step
+        pendingProfileCompletionStatus: nextStep !== null,
         email: email
       });
-      
-      set({ 
-        isLoading: false, 
+
+      set({
+        isLoading: false,
         error: null,
-        user: updatedUser,
-        // Set next step for navigation
-        pendingProfileCompletion: { 
-          isPending: nextStep !== null, 
-          userType: userType, 
-          email: email, 
-          step: nextStep 
-        },
-        isAuthenticated: true,
-        userType: userType
+        pendingProfileCompletion: { // Növbəti addımı store-a yaz
+          isPending: nextStep !== null,
+          userType: nextStep !== null ? userType : null,
+          email: nextStep !== null ? email : null,
+          step: nextStep
+        }
       });
-      
+
+      // Profil tamamlandıqdan sonra tam məlumatı yenidən çək
+      await get().fetchUserInformation(true); // Ən son və tam məlumatı almaq üçün
+
+      console.log('completeProfile: Profil uğurla tamamlandı.');
       return { success: true, data: response.data, nextStep };
     } catch (error: any) {
-      console.error('Profile completion error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
+      console.error('completeProfile: Profil tamamlama zamanı xəta:', error.message);
+      if (error.response) {
+        console.error('Backend cavab statusu:', error.response.status);
+        console.error('Backend cavab datası:', error.response.data);
+        console.error('Backend cavab headers:', error.response.headers);
+        
+        // Add specific handling for 403 errors
+        if (error.response.status === 403) {
+          console.error('completeProfile: 403 Forbidden - This might indicate:');
+          console.error('- User is not in the correct state for profile completion');
+          console.error('- Profile was already completed');
+          console.error('- Token is valid but user lacks permission for this action');
+          console.error('- Backend expects different user state');
+        }
+        
+        if (error.response.data && typeof error.response.data === 'object') {
+          for (const key in error.response.data) {
+            console.error(`Field Error - ${key}:`, error.response.data[key]);
+          }
+        }
+      } else {
+        console.error('Şəbəkə xətası və ya cavab yoxdur:', error.message);
+      }
       const errorMessage = error.response?.data?.message || 'Profil tamamlama zamanı səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       return { success: false, message: errorMessage };
     }
+  },
+
+  // Add diagnostic function to check current authentication state
+  checkAuthenticationState: () => {
+    const state = get();
+    console.log('=== Authentication State Check ===');
+    console.log('isAuthenticated:', state.isAuthenticated);
+    console.log('token:', state.token ? 'present' : 'missing');
+    console.log('userType:', state.userType);
+    console.log('user:', state.user);
+    console.log('pendingProfileCompletion:', state.pendingProfileCompletion);
+    console.log('error:', state.error);
+    console.log('===============================');
+    return state;
+  },
+
+  // Add a function to validate the current user state for profile completion
+  validateProfileCompletionState: () => {
+    const state = get();
+    const validationResult = {
+      isValid: true,
+      errors: [] as string[],
+      warnings: [] as string[]
+    };
+
+    if (!state.isAuthenticated) {
+      validationResult.isValid = false;
+      validationResult.errors.push('User is not authenticated');
+    }
+
+    if (!state.token) {
+      validationResult.isValid = false;
+      validationResult.errors.push('No authentication token available');
+    }
+
+    if (!state.userType) {
+      validationResult.isValid = false;
+      validationResult.errors.push('User type is not set');
+    }
+
+    if (!state.pendingProfileCompletion.isPending) {
+      validationResult.warnings.push('Profile completion is not marked as pending - this might indicate the profile is already complete');
+    }
+
+    if (state.pendingProfileCompletion.step !== 'personalInfo') {
+      validationResult.warnings.push(`Expected step 'personalInfo' but current step is '${state.pendingProfileCompletion.step}'`);
+    }
+
+    if (state.user) {
+      const hasBasicInfo = state.userType === 'company_provider' 
+        ? (state.user.companyName && state.user.phone)
+        : (state.user.name && state.user.surname);
+      
+      if (hasBasicInfo) {
+        validationResult.warnings.push('User already has basic information - this might indicate the profile is complete enough to access the home screen');
+      }
+    }
+
+    console.log('Profile completion validation result:', validationResult);
+    return validationResult;
+  },
+
+  // Add function to clear corrupted storage and reset app state
+  clearCorruptedData: async () => {
+    try {
+      await AsyncStorage.multiRemove(['userToken', 'userData']);
+      console.log('clearCorruptedData: Zədələnmiş məlumatlar təmizləndi');
+    } catch (error) {
+      console.error('clearCorruptedData: Məlumatları təmizləmək mümkün olmadı:', error);
+    }
+    
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      tempEmail: null,
+      token: null,
+      userType: null,
+      pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
+    });
+    
+    delete apiClient.defaults.headers.common['Authorization'];
+    console.log('clearCorruptedData: App vəziyyəti sıfırlandı');
   },
 }));
 

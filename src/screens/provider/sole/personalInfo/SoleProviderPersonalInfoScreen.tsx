@@ -86,6 +86,11 @@ const SoleProviderPersonalInfoScreen = () => {
     if (!validateForm()) {
       return;
     }
+
+    // Add diagnostic check before API call
+    const { checkAuthenticationState } = useAuthStore.getState();
+    checkAuthenticationState();
+
     const isoDate = toIsoDate(dateOfBirth);
     // Create description from address and work hours
     const description = `${address.trim()}\nWork Hours: ${JSON.stringify(workHours)}`;

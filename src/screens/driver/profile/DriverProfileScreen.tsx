@@ -9,8 +9,11 @@ const UserProfileScreen = () => {
   const { logout, user, userType, fetchUserInformation } = useAuthStore(); 
 
   useEffect(() => {
-    fetchUserInformation();
-  }, [fetchUserInformation]);
+    // Only fetch user information if we don't have basic info
+    if (!user || !user.name || !user.surname) {
+      fetchUserInformation(true);
+    }
+  }, [fetchUserInformation, user]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -59,7 +62,7 @@ const UserProfileScreen = () => {
     }
   };
 
-  const getUserTypeDisplay = (type?: string) => {
+  const getUserTypeDisplay = (type?: string | null) => {
     switch (type) {
       case 'driver':
         return 'Driver';
@@ -111,7 +114,7 @@ const UserProfileScreen = () => {
             
             <View style={styles.infoRow}>
               <Text style={styles.label}>User Type:</Text>
-              <Text style={styles.value}>{getUserTypeDisplay(user.userType)}</Text>
+              <Text style={styles.value}>{getUserTypeDisplay(userType)}</Text>
             </View>
           </View>
         ) : (

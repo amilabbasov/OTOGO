@@ -67,8 +67,12 @@ const SoleProviderProductsScreen = () => {
           {
             text: t('OK'),
             onPress: () => {
-              // Mark profile completion as done - this will trigger MainRouter to show the main app
-              setPendingProfileCompletionState({ isPending: false, userType: null, email: null });
+            setPendingProfileCompletionState({ 
+              isPending: false, 
+              userType: null, 
+              email: null, 
+              step: null 
+            });
             }
           }
         ]
