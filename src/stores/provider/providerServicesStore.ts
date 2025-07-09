@@ -45,7 +45,6 @@ const useProviderServicesStore = create<ProviderServicesStore>((set, get) => ({
         error: errorMessage, 
         isLoading: false 
       });
-      console.error('Error updating provider services:', error);
       throw error;
     }
   },

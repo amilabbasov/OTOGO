@@ -23,39 +23,36 @@ import { useTranslation } from 'react-i18next';
 const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassword>) => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const { forgotPassword, isLoading, error: authStoreError } = useAuthStore();
 
   const handleSendResetLink = async () => {
+    setEmailError('');
+    
     if (!email.trim()) {
-      Alert.alert(t('Error'), t('Please enter your email address'));
+      setEmailError(t('Please enter your email address'));
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert(t('Error'), t('Please enter a valid email address'));
+      setEmailError(t('Please enter a valid email address'));
       return;
     }
 
     try {
       await forgotPassword(email.trim());
       
-      console.log('About to navigate to OTP screen');
-      // Use Alert with callback like RegisterScreen does
       Alert.alert(
-        t('Success'),
-        t('A password reset code has been sent to your email. Please check your inbox.'),
+        t('Success'), 
+        t('Password reset code has been sent to your email.'),
         [{ 
           text: t('OK'), 
-          onPress: () => {
-            console.log('Alert OK pressed, navigating to OTP');
-            navigation.navigate(Routes.otp, { email: email.trim(), isPasswordReset: true });
-            console.log('Navigation to OTP completed');
-          }
+          onPress: () => navigation.navigate(Routes.passwordResetOtp, { email: email.trim() })
         }]
       );
     } catch (error: any) {
       const errorMessage = authStoreError || t('Failed to send reset instructions. Please try again.');
-      Alert.alert(t('Error'), errorMessage);
+      setEmailError(errorMessage);
     }
   };
 
@@ -94,17 +91,23 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
 
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>{t('Email')}</Text>
-              <View style={styles.emailInputContainer}>
+              <View style={[styles.emailInputContainer, emailError && styles.emailInputError]}>
                 <TextInput
                   style={styles.emailInput}
                   placeholder={t('Enter your email')}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError('');
+                  }}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   placeholderTextColor="#999"
                 />
               </View>
+              {emailError ? (
+                <Text style={styles.errorText}>{emailError}</Text>
+              ) : null}
             </View>
 
             <TouchableOpacity 
@@ -180,6 +183,9 @@ const styles = StyleSheet.create({
     borderColor: '#DFDFDF',
     borderRadius: 12,
   },
+  emailInputError: {
+    borderColor: '#FF4444',
+  },
   emailInput: {
     paddingHorizontal: 15,
     paddingVertical: 15,
@@ -210,6 +216,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#000',
     fontWeight: '600',
+  },
+  errorText: {
+    color: '#FF4444',
+    fontSize: 12,
+    marginTop: 8,
+    fontWeight: '400',
   },
 });
 

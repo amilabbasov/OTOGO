@@ -205,8 +205,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         pendingProfileCompletion: newPendingState,
       });
 
-      console.log('fetchUserInformation: İstifadəçi məlumatları uğurla çəkildi.');
-
     } catch (error: any) {
       console.error('fetchUserInformation: Məlumatları çəkərkən xəta:', error.response?.status, error.message);
       console.error('fetchUserInformation: Error details:', {
@@ -222,10 +220,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         isLoading: false
       });
       
-      // Handle different error scenarios
       if (error?.response?.status === 400) {
-        console.warn('fetchUserInformation: 400 error - this might indicate profile is not complete or user not found');
-        // For 400 errors, we should not clear auth but maybe set pending profile completion
         const currentState = get();
         set({
           pendingProfileCompletion: {
@@ -301,7 +296,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       await authService.logout();
     } catch (error) {
-      console.error('logout: Backend-dən çıxış API çağırışı uğursuz oldu:', error);
     } finally {
       get().clearAuth();
     }
@@ -328,7 +322,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
             // Validate stored data structure
             if (!storedUserData.user || !storedUserData.userType || !storedUserData.email) {
-              console.warn('initializeAuth: Yaddaşda saxlanmış məlumatlar natamam, təmizlənir');
               get().clearAuth();
               return;
             }
@@ -351,7 +344,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
             } catch (fetchError: any) {
               // Əgər 400 xətası alırıqsa, bu o deməkdir ki, profil tam deyil
               if (fetchError?.response?.status === 400) {
-                console.warn('initializeAuth: Profile information incomplete, setting pending profile completion');
                 set({
                   pendingProfileCompletion: {
                     isPending: true,
@@ -361,36 +353,25 @@ const useAuthStore = create<AuthStore>((set, get) => ({
                   }
                 });
               } else {
-                // Digər xətalar üçün auth təmizlə
-                console.error('initializeAuth: API xətası, auth təmizlənir:', fetchError);
                 get().clearAuth();
               }
             }
 
           } catch (parseError) {
-            console.error('initializeAuth: Yaddaşda saxlanmış istifadəçi məlumatları zədələnib:', parseError);
             get().clearAuth();
           }
         } else {
-          // Token var, lakin user data yoxdur. Bu halda token expired ola bilər
-          // və ya server tərəfindən məlumatlar silinmiş ola bilər.
-          // Tokenlə birbaşa məlumatı çəkməyə cəhd et. Uğursuz olsa təmizlə.
-          console.warn('initializeAuth: Token mövcuddur, lakin istifadəçi məlumatları yoxdur. Serverdən məlumat çəkiləcək.');
           try {
             await get().fetchUserInformation(true);
           } catch (e) {
-            console.error('initializeAuth: Tokenlə məlumat çəkmək mümkün olmadı, auth təmizlənir.', e);
             get().clearAuth();
           }
         }
       } else {
-        // Token yoxdursa, isAuthenticated false olsun
         set({ isAuthenticated: false, token: null });
         delete apiClient.defaults.headers.common['Authorization'];
-        console.log('initializeAuth: Token yoxdur, autentifikasiya edilməyib.');
       }
     } catch (error) {
-      console.error('initializeAuth: Başlatma zamanı xəta:', error);
       get().clearAuth();
     } finally {
       set({ isLoading: false });
@@ -430,10 +411,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           step: 'personalInfo'
         }
       });
-      console.log('register: Uğurlu qeydiyyat.');
       return response.data;
     } catch (error: any) {
-      console.error('register: Qeydiyyat zamanı xəta:', error);
       const errorMessage = error.response?.data?.message || 'Qeydiyyat zamanı səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -488,10 +467,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       get().incrementOtpResendAttempts();
       
       set({ isLoading: false, error: null });
-      console.log('resendOtp: OTP uğurla yenidən göndərildi.');
       return response.data;
     } catch (error: any) {
-      console.error('resendOtp: OTP-ni yenidən göndərmək mümkün olmadı:', error);
       const errorMessage = error.response?.data?.message || 'OTP-ni yenidən göndərmək mümkün olmadı.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -533,10 +510,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       get().incrementPasswordResetOtpResendAttempts();
       
       set({ isLoading: false, error: null });
-      console.log('resendPasswordResetOtp: Şifrə sıfırlama OTP-si uğurla yenidən göndərildi.');
       return response.data;
     } catch (error: any) {
-      console.error('resendPasswordResetOtp: OTP kodu yenidən göndərilərkən səhv:', error);
       const errorMessage = error.response?.data?.message || 'OTP kodu yenidən göndərilərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -546,25 +521,14 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   forgotPassword: async (email: string) => {
     set({ isLoading: true, error: null });
     try {
-      console.log('forgotPassword: Making API call for email:', email);
       const response = await authService.requestPasswordReset(email);
-      console.log('forgotPassword: API response:', response);
       set({ 
         isLoading: false, 
         error: null, 
-        tempEmail: email,
-        // Ensure we don't interfere with authentication state for password reset
-        isAuthenticated: false,
-        pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null }
-      });
-      console.log('forgotPassword: Şifrə sıfırlama kodu göndərildi.');
-      console.log('forgotPassword: State after setting:', {
-        isAuthenticated: get().isAuthenticated,
-        pendingProfileCompletion: get().pendingProfileCompletion
+        tempEmail: email
       });
       return response.data;
     } catch (error: any) {
-      console.error('forgotPassword: Şifrə sıfırlama kodu göndərilərkən səhv:', error);
       const errorMessage = error.response?.data?.message || 'Şifrə sıfırlama kodu göndərilərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -580,7 +544,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       if (isPasswordReset) {
         response = await authService.validatePasswordResetToken(email, token);
         set({ isLoading: false, error: null, tempEmail: null });
-        console.log('verifyOtp: Şifrə sıfırlama OTP-si təsdiqləndi.');
         return response.data;
       } else {
         switch (userType) {
@@ -630,11 +593,9 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         // Reset OTP resend state after successful verification
         get().resetOtpResendState();
 
-        console.log('verifyOtp: OTP uğurla təsdiqləndi.');
         return response.data;
       }
     } catch (error: any) {
-      console.error('verifyOtp: OTP təsdiqlənərkən xəta:', error);
       const errorMessage = error.response?.data?.message || 'OTP təsdiqlənərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -646,10 +607,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const response = await authService.updatePassword(data);
       set({ isLoading: false, error: null });
-      console.log('updatePassword: Şifrə uğurla yeniləndi.');
       return response.data;
     } catch (error: any) {
-      console.error('updatePassword: Şifrə yenilənərkən xəta:', error);
       const errorMessage = error.response?.data?.message || 'Şifrə yenilənərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -666,7 +625,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     const validation = get().validateProfileCompletionState();
     if (!validation.isValid) {
       const errorMessage = `Profile completion validation failed: ${validation.errors.join(', ')}`;
-      console.error('completeProfile:', errorMessage);
       set({ error: errorMessage, isLoading: false });
       return { success: false, message: errorMessage };
     }
@@ -740,22 +698,13 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
       return { success: true, data: response.data, nextStep };
     } catch (error: any) {
-      console.error('completeProfile: Profil tamamlama zamanı xəta:', error.message);
       if (error.response) {
-        console.error('Backend cavab statusu:', error.response.status);
-        console.error('Backend cavab datası:', error.response.data);
-        
-        if (error.response.status === 403) {
-          console.error('completeProfile: 403 Forbidden - Profile completion failed');
-        }
         
         if (error.response.data && typeof error.response.data === 'object') {
           for (const key in error.response.data) {
-            console.error(`Field Error - ${key}:`, error.response.data[key]);
           }
         }
       } else {
-        console.error('Şəbəkə xətası və ya cavab yoxdur:', error.message);
       }
       const errorMessage = error.response?.data?.message || 'Profil tamamlama zamanı səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
@@ -816,7 +765,6 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       await AsyncStorage.multiRemove(['userToken', 'userData']);
     } catch (error) {
-      console.error('clearCorruptedData: Məlumatları təmizləmək mümkün olmadı:', error);
     }
     
     set({

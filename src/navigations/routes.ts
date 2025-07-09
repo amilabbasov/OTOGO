@@ -14,6 +14,7 @@ export enum Routes {
     register = 'register',
     forgotPassword = 'forgotPassword',
     otp = 'otp',
+    passwordResetOtp = 'passwordResetOtp',
     resetPassword = 'resetPassword',
     personalInfo = 'personalInfo',
     serviceSelection = 'serviceSelection',

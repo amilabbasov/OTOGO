@@ -51,22 +51,6 @@ const Router = () => {
 
   const shouldShowMainRouter = isAuthenticated || pendingProfileCompletion.isPending;
 
-  console.log('Router: Navigation state:', {
-    isAuthenticated,
-    userType,
-    isAuthLoading,
-    hasToken: !!token,
-    pendingProfileCompletion: pendingProfileCompletion.isPending,
-    shouldShowMainRouter
-  });
-  
-  console.log('Router: pendingProfileCompletion details:', {
-    isPending: pendingProfileCompletion.isPending,
-    userType: pendingProfileCompletion.userType,
-    email: pendingProfileCompletion.email,
-    step: pendingProfileCompletion.step
-  });
-
   return (
     <I18nextProvider i18n={i18n}>
       <NavigationContainer>

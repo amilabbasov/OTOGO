@@ -15,40 +15,28 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import useAuthStore from '../../../stores/auth/authStore';
-import { UserType } from '../../../types/common';
 
 const OTP_LENGTH = 6;
 const RESEND_TIME = 90;
 
-type OtpRouteParams = {
-  email: string;
-  userType?: UserType;
-};
-
-const OtpScreen = () => {
+const PasswordResetOtpScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const route = useRoute<AuthScreenProps<Routes.otp>['route']>();
+  const route = useRoute<any>();
   
   const { 
     verifyOtp,
-    resendOtp,
+    resendPasswordResetOtp,
     isLoading,
     error: authStoreError,
-    pendingProfileCompletion,
     tempEmail,
-    userType: storeUserType,
     otpResendState,
-    resetOtpResendState,
+    resetPasswordResetOtpState,
   } = useAuthStore();
 
-  // Get email and userType from route params or auth store
-  const routeParams = route.params as OtpRouteParams;
-  const email = routeParams?.email || pendingProfileCompletion.email || tempEmail || '';
-  const userType = routeParams?.userType || pendingProfileCompletion.userType || storeUserType;
+  const email = route.params?.email || tempEmail || '';
 
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
@@ -59,17 +47,16 @@ const OtpScreen = () => {
 
   // Check lockout status on component mount
   useEffect(() => {
-    if (otpResendState.isLockedOut && otpResendState.lockoutUntil) {
+    if (otpResendState.isPasswordResetLockedOut && otpResendState.passwordResetLockoutUntil) {
       const now = Date.now();
-      if (now < otpResendState.lockoutUntil) {
-        const remainingTime = Math.ceil((otpResendState.lockoutUntil - now) / 1000);
+      if (now < otpResendState.passwordResetLockoutUntil) {
+        const remainingTime = Math.ceil((otpResendState.passwordResetLockoutUntil - now) / 1000);
         setLockoutTimer(remainingTime);
       } else {
-        // Lockout has expired, reset the state
-        resetOtpResendState();
+        resetPasswordResetOtpState();
       }
     }
-  }, [otpResendState.isLockedOut, otpResendState.lockoutUntil, resetOtpResendState]);
+  }, [otpResendState.isPasswordResetLockedOut, otpResendState.passwordResetLockoutUntil, resetPasswordResetOtpState]);
 
   // Handle lockout timer countdown
   useEffect(() => {
@@ -77,7 +64,7 @@ const OtpScreen = () => {
       const interval = setInterval(() => {
         setLockoutTimer(prev => {
           if (prev === null || prev <= 1) {
-            resetOtpResendState();
+            resetPasswordResetOtpState();
             return null;
           }
           return prev - 1;
@@ -85,8 +72,9 @@ const OtpScreen = () => {
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [lockoutTimer, resetOtpResendState]);
+  }, [lockoutTimer, resetPasswordResetOtpState]);
 
+  // Handle resend timer
   useEffect(() => {
     if (timer === 0) {
       setIsResendDisabled(false);
@@ -120,12 +108,7 @@ const OtpScreen = () => {
     if (!isResendDisabled) {
       setOtpError('');
       try {
-        if (userType) {
-          await resendOtp(email, userType); 
-        } else {
-          setOtpError(t('Failed to resend OTP code: User type is missing.'));
-          return;
-        }
+        await resendPasswordResetOtp(email);
         setTimer(RESEND_TIME);
         Alert.alert(t('Success'), t('OTP code resent successfully'));
       } catch (err: any) {
@@ -150,11 +133,9 @@ const OtpScreen = () => {
     }
 
     try {
-      if (userType) {
-        await verifyOtp({ email, token: otpCode, userType: userType as UserType });
-      } else {
-        setOtpError(t('An error occurred. Please try again. Missing user type.'));
-      }
+      await verifyOtp({ email, token: otpCode, isPasswordReset: true }); 
+      Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
+      navigation.navigate(Routes.resetPassword, { email, token: otpCode });
     } catch (err: any) {
       const displayError = authStoreError || t('OTP code is wrong. Please try again.');
       setOtpError(displayError);
@@ -168,16 +149,16 @@ const OtpScreen = () => {
   };
 
   const getResendAttemptsText = () => {
-    const attemptsLeft = 5 - otpResendState.resendAttempts;
+    const attemptsLeft = 5 - otpResendState.passwordResetResendAttempts;
     if (attemptsLeft <= 0) {
-      return 'No attempts remaining';
+      return 'No password reset attempts remaining';
     }
-    return `${attemptsLeft} attempts remaining`;
+    return `${attemptsLeft} password reset attempts remaining`;
   };
 
   const getResendButtonText = () => {
-    if (otpResendState.isLockedOut && lockoutTimer !== null) {
-      return `Locked out (${formatLockoutTime(lockoutTimer)})`;
+    if (otpResendState.isPasswordResetLockedOut && lockoutTimer !== null) {
+      return `Password reset locked out (${formatLockoutTime(lockoutTimer)})`;
     }
     
     if (isResendDisabled) {
@@ -187,7 +168,7 @@ const OtpScreen = () => {
   };
 
   const isResendButtonDisabled = isResendDisabled || isLoading || 
-    (otpResendState.isLockedOut && lockoutTimer !== null);
+    (otpResendState.isPasswordResetLockedOut && lockoutTimer !== null);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -203,7 +184,7 @@ const OtpScreen = () => {
                 <Text style={styles.title}>{t('Verify')}</Text>
                 <Text style={styles.title}>{t('your email')}</Text>
                 <Text style={styles.subtitle}>
-                  {t('To verify your account, enter the 6 digit OTP code that we sent to your email.')}
+                  {t('To reset your password, enter the 6 digit OTP code that we sent to your email.')}
                 </Text>
               </View>
               <View style={styles.otpRow}>
@@ -237,17 +218,17 @@ const OtpScreen = () => {
               ) : null}
               
               {/* Resend attempts info */}
-              {otpResendState.resendAttempts > 0 && (
+              {otpResendState.passwordResetResendAttempts > 0 && (
                 <View style={styles.attemptsContainer}>
                   <Text style={styles.attemptsText}>{getResendAttemptsText()}</Text>
                 </View>
               )}
 
               {/* Lockout warning */}
-              {otpResendState.isLockedOut && lockoutTimer !== null && (
+              {otpResendState.isPasswordResetLockedOut && lockoutTimer !== null && (
                 <View style={styles.lockoutContainer}>
                   <Text style={styles.lockoutText}>
-                    Too many resend attempts. Please wait {formatLockoutTime(lockoutTimer)} before trying again.
+                    Too many password reset attempts. Please wait {formatLockoutTime(lockoutTimer)} before trying again.
                   </Text>
                 </View>
               )}
@@ -446,4 +427,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OtpScreen; 
+export default PasswordResetOtpScreen; 

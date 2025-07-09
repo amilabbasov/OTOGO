@@ -14,6 +14,7 @@ export type AuthStackParamList = {
   [Routes.register]: { userType: UserType | null; selectedServices?: string[] };
   [Routes.forgotPassword]: undefined;
   [Routes.otp]: { email: string; userType?: UserType; isPasswordReset?: boolean };
+  [Routes.passwordResetOtp]: { email: string };
   [Routes.resetPassword]: { email: string; token: string };
 };
 

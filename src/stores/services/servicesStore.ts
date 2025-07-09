@@ -35,7 +35,6 @@ const useServicesStore = create<ServicesStore>((set, get) => ({
         error: errorMessage, 
         isLoading: false 
       });
-      console.error('Error fetching services:', error);
     }
   },
 

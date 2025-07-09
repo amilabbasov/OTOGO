@@ -43,12 +43,10 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('API Request interceptor error:', error);
     }
     return config;
   },
   (error) => {
-    console.error('API Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
