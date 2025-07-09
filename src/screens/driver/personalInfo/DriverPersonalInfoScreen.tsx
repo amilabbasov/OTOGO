@@ -51,9 +51,41 @@ const DriverPersonalInfoScreen = () => {
       Alert.alert(t('Error'), t('Please enter your phone number'));
       return false;
     }
+
+    // Validate phone number format (basic validation)
+    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{8,}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      Alert.alert(t('Error'), t('Please enter a valid phone number'));
+      return false;
+    }
     
     if (!dateOfBirth.trim()) {
       Alert.alert(t('Error'), t('Please enter your date of birth'));
+      return false;
+    }
+
+    // Validate date format
+    const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (!dateRegex.test(dateOfBirth.trim())) {
+      Alert.alert(t('Error'), t('Please enter date of birth in DD/MM/YYYY format'));
+      return false;
+    }
+
+    // Validate date is reasonable
+    const [day, month, year] = dateOfBirth.split('/').map(Number);
+    const currentYear = new Date().getFullYear();
+    if (year < 1900 || year > currentYear) {
+      Alert.alert(t('Error'), t('Please enter a valid year of birth'));
+      return false;
+    }
+
+    if (month < 1 || month > 12) {
+      Alert.alert(t('Error'), t('Please enter a valid month'));
+      return false;
+    }
+
+    if (day < 1 || day > 31) {
+      Alert.alert(t('Error'), t('Please enter a valid day'));
       return false;
     }
 
@@ -61,32 +93,49 @@ const DriverPersonalInfoScreen = () => {
   };
 
   function toIsoDate(date: string) {
+    if (!date || date.length !== 10) {
+      return null;
+    }
     const [day, month, year] = date.split('/');
-    return `${year}-${month}-${day}`;
+    if (!day || !month || !year) {
+      return null;
+    }
+    // Ensure proper formatting with leading zeros
+    const formattedDay = day.padStart(2, '0');
+    const formattedMonth = month.padStart(2, '0');
+    const formattedYear = year.padStart(4, '0');
+    return `${formattedYear}-${formattedMonth}-${formattedDay}`;
   }
 
   const handleContinue = async () => {
     if (!validateForm()) return;
 
-    // Add diagnostic check before API call
-    const { checkAuthenticationState } = useAuthStore.getState();
-    checkAuthenticationState();
-
     const isoDate = toIsoDate(dateOfBirth);
-    const result = await completeProfile(
-      email, 
-      firstName.trim(), 
-      lastName.trim(), 
-      phone.trim(),
-      userType,
-      isoDate || new Date().toISOString().split('T')[0],
-    );
-    
-    if (result.success) {
-      // Navigation will be handled automatically by MainRouter based on state change
-      console.log('Profile completed successfully, next step:', result.nextStep);
-    } else {
-      Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
+    if (!isoDate) {
+      Alert.alert(t('Error'), t('Please enter a valid date of birth in DD/MM/YYYY format'));
+      return;
+    }
+
+    try {
+      const result = await completeProfile(
+        email, 
+        firstName.trim(), 
+        lastName.trim(), 
+        phone.trim(),
+        userType,
+        isoDate,
+      );
+      
+      if (result.success) {
+        // Navigation will be handled automatically by MainRouter based on state change
+        console.log('Profile completed successfully, next step:', result.nextStep);
+      } else {
+        Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
+      }
+    } catch (error: any) {
+      console.error('Profile completion error:', error);
+      const errorMessage = error.message || t('Failed to complete profile');
+      Alert.alert(t('Error'), errorMessage);
     }
   };
 

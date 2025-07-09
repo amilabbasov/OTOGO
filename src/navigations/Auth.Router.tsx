@@ -12,6 +12,7 @@ import { AuthStackParamList } from './types';
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AuthRouter = () => {
+  console.log('AuthRouter: Rendering with screens:', [Routes.login, Routes.register, Routes.forgotPassword, Routes.otp, Routes.resetPassword, Routes.onboardingPager]);
 
   return (
     <AuthStack.Navigator

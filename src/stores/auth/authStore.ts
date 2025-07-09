@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import authService from '../../services/functions/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthStore, PendingProfileCompletionState, User, UserType, RegisterData, OtpVerificationData } from '../../types/common';
+import { AuthStore, PendingProfileCompletionState, User, UserType, RegisterData, OtpVerificationData, OtpResendState } from '../../types/common';
 import apiClient from '../../services/apiClient';
 
 const useAuthStore = create<AuthStore>((set, get) => ({
@@ -13,6 +13,16 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   token: null,
   userType: null,
   pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
+  otpResendState: { 
+    resendAttempts: 0, 
+    lastResendTime: null, 
+    lockoutUntil: null, 
+    isLockedOut: false,
+    passwordResetResendAttempts: 0,
+    passwordResetLastResendTime: null,
+    passwordResetLockoutUntil: null,
+    isPasswordResetLockedOut: false
+  },
 
   setToken: async (token: string) => {
     try {
@@ -25,6 +35,15 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } catch (e: any) {
       console.error('setToken: Tokeni saxlamaq mümkün olmadı:', e.message);
+    }
+  },
+
+  ensureApiClientAuth: () => {
+    const { token } = get();
+    if (token) {
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete apiClient.defaults.headers.common['Authorization'];
     }
   },
 
@@ -46,10 +65,39 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  saveOtpResendState: async (otpResendState: OtpResendState) => {
+    try {
+      await AsyncStorage.setItem('otpResendState', JSON.stringify(otpResendState));
+    } catch (e: any) {
+      console.error('saveOtpResendState: OTP resend state saxlamaq mümkün olmadı:', e.message);
+    }
+  },
+
+  loadOtpResendState: async (): Promise<OtpResendState | null> => {
+    try {
+      const stored = await AsyncStorage.getItem('otpResendState');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Check if lockout has expired
+        if (parsed.lockoutUntil && Date.now() > parsed.lockoutUntil) {
+          // Lockout has expired, reset the state
+          await AsyncStorage.removeItem('otpResendState');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
+    } catch (e: any) {
+      console.error('loadOtpResendState: OTP resend state yükləmək mümkün olmadı:', e.message);
+      return null;
+    }
+  },
+
   removeToken: async () => {
     try {
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userData');
+      await AsyncStorage.removeItem('otpResendState');
       delete apiClient.defaults.headers.common['Authorization'];
     } catch (e: any) {
       console.error('removeToken: Tokeni silmək mümkün olmadı:', e.message);
@@ -66,6 +114,16 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       token: null,
       userType: null,
       pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
+      otpResendState: { 
+        resendAttempts: 0, 
+        lastResendTime: null, 
+        lockoutUntil: null, 
+        isLockedOut: false,
+        passwordResetResendAttempts: 0,
+        passwordResetLastResendTime: null,
+        passwordResetLockoutUntil: null,
+        isPasswordResetLockedOut: false
+      },
     });
     get().removeToken();
   },
@@ -254,6 +312,12 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const storedToken = await AsyncStorage.getItem('userToken');
       const storedUserDataStr = await AsyncStorage.getItem('userData');
+      const storedOtpResendState = await get().loadOtpResendState();
+
+      // Set OTP resend state if it exists
+      if (storedOtpResendState) {
+        set({ otpResendState: storedOtpResendState });
+      }
 
       if (storedToken) {
         await get().setToken(storedToken); // Tokeni set et və Axios headerini təyin et
@@ -377,6 +441,32 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   resendOtp: async (email: string, userType: UserType) => {
+    const currentState = get();
+    const { otpResendState } = currentState;
+    
+    // Check if user is locked out for regular registration
+    if (otpResendState.isLockedOut && otpResendState.lockoutUntil) {
+      const now = Date.now();
+      if (now < otpResendState.lockoutUntil) {
+        const remainingTime = Math.ceil((otpResendState.lockoutUntil - now) / 1000 / 60); // minutes
+        const errorMessage = `Too many resend attempts. Please wait ${remainingTime} minutes before trying again.`;
+        set({ error: errorMessage });
+        throw new Error(errorMessage);
+      } else {
+        // Lockout period has expired, reset the state
+        get().resetOtpResendState();
+      }
+    }
+
+    // Check if user has exceeded the 5-resend limit for regular registration
+    if (otpResendState.resendAttempts >= 5) {
+      const lockoutUntil = Date.now() + (15 * 60 * 1000); // 15 minutes from now
+      get().setOtpLockout(lockoutUntil);
+      const errorMessage = 'Maximum resend attempts reached. Please wait 15 minutes before trying again.';
+      set({ error: errorMessage });
+      throw new Error(errorMessage);
+    }
+
     set({ isLoading: true, error: null });
     try {
       let response;
@@ -393,6 +483,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         default:
           throw new Error('resendOtp: Yanlış istifadəçi növü seçilib, OTP yenidən göndərilə bilmədi.');
       }
+      
+      // Increment resend attempts and update last resend time for regular registration
+      get().incrementOtpResendAttempts();
+      
       set({ isLoading: false, error: null });
       console.log('resendOtp: OTP uğurla yenidən göndərildi.');
       return response.data;
@@ -404,31 +498,74 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  forgotPassword: async (email: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await authService.requestPasswordReset(email);
-      set({ isLoading: false, error: null, tempEmail: email });
-      console.log('forgotPassword: Şifrə sıfırlama kodu göndərildi.');
-      return response.data;
-    } catch (error: any) {
-      console.error('forgotPassword: Şifrə sıfırlama kodu göndərilərkən səhv:', error);
-      const errorMessage = error.response?.data?.message || 'Şifrə sıfırlama kodu göndərilərkən səhv baş verdi.';
-      set({ error: errorMessage, isLoading: false });
-      throw error;
-    }
-  },
-
   resendPasswordResetOtp: async (email: string) => {
+    const currentState = get();
+    const { otpResendState } = currentState;
+    
+    // Check if user is locked out for password reset
+    if (otpResendState.isPasswordResetLockedOut && otpResendState.passwordResetLockoutUntil) {
+      const now = Date.now();
+      if (now < otpResendState.passwordResetLockoutUntil) {
+        const remainingTime = Math.ceil((otpResendState.passwordResetLockoutUntil - now) / 1000 / 60); // minutes
+        const errorMessage = `Too many password reset attempts. Please wait ${remainingTime} minutes before trying again.`;
+        set({ error: errorMessage });
+        throw new Error(errorMessage);
+      } else {
+        // Lockout period has expired, reset the password reset state
+        get().resetPasswordResetOtpState();
+      }
+    }
+
+    // Check if user has exceeded the 5-resend limit for password reset
+    if (otpResendState.passwordResetResendAttempts >= 5) {
+      const lockoutUntil = Date.now() + (15 * 60 * 1000); // 15 minutes from now
+      get().setPasswordResetOtpLockout(lockoutUntil);
+      const errorMessage = 'Maximum password reset attempts reached. Please wait 15 minutes before trying again.';
+      set({ error: errorMessage });
+      throw new Error(errorMessage);
+    }
+
     set({ isLoading: true, error: null });
     try {
       const response = await authService.resendPasswordResetOtp(email);
+      
+      // Increment password reset resend attempts
+      get().incrementPasswordResetOtpResendAttempts();
+      
       set({ isLoading: false, error: null });
       console.log('resendPasswordResetOtp: Şifrə sıfırlama OTP-si uğurla yenidən göndərildi.');
       return response.data;
     } catch (error: any) {
       console.error('resendPasswordResetOtp: OTP kodu yenidən göndərilərkən səhv:', error);
       const errorMessage = error.response?.data?.message || 'OTP kodu yenidən göndərilərkən səhv baş verdi.';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  forgotPassword: async (email: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      console.log('forgotPassword: Making API call for email:', email);
+      const response = await authService.requestPasswordReset(email);
+      console.log('forgotPassword: API response:', response);
+      set({ 
+        isLoading: false, 
+        error: null, 
+        tempEmail: email,
+        // Ensure we don't interfere with authentication state for password reset
+        isAuthenticated: false,
+        pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null }
+      });
+      console.log('forgotPassword: Şifrə sıfırlama kodu göndərildi.');
+      console.log('forgotPassword: State after setting:', {
+        isAuthenticated: get().isAuthenticated,
+        pendingProfileCompletion: get().pendingProfileCompletion
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('forgotPassword: Şifrə sıfırlama kodu göndərilərkən səhv:', error);
+      const errorMessage = error.response?.data?.message || 'Şifrə sıfırlama kodu göndərilərkən səhv baş verdi.';
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
@@ -489,6 +626,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
             step: 'personalInfo'
           }
         });
+
+        // Reset OTP resend state after successful verification
+        get().resetOtpResendState();
+
         console.log('verifyOtp: OTP uğurla təsdiqləndi.');
         return response.data;
       }
@@ -517,6 +658,9 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
   completeProfile: async (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, taxId?: string) => {
     set({ isLoading: true, error: null });
+    
+    // Ensure API client has proper authorization
+    get().ensureApiClientAuth();
     
     const currentState = get();
     const validation = get().validateProfileCompletionState();
@@ -684,9 +828,105 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       token: null,
       userType: null,
       pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
+      otpResendState: { 
+        resendAttempts: 0, 
+        lastResendTime: null, 
+        lockoutUntil: null, 
+        isLockedOut: false,
+        passwordResetResendAttempts: 0,
+        passwordResetLastResendTime: null,
+        passwordResetLockoutUntil: null,
+        isPasswordResetLockedOut: false
+      },
     });
     
     delete apiClient.defaults.headers.common['Authorization'];
+  },
+
+  resetOtpResendState: () => {
+    const newState = { 
+      resendAttempts: 0, 
+      lastResendTime: null, 
+      lockoutUntil: null, 
+      isLockedOut: false,
+      passwordResetResendAttempts: 0,
+      passwordResetLastResendTime: null,
+      passwordResetLockoutUntil: null,
+      isPasswordResetLockedOut: false
+    };
+    set({ otpResendState: newState });
+    get().saveOtpResendState(newState);
+  },
+
+  incrementOtpResendAttempts: () => {
+    const currentState = get();
+    const newAttempts = currentState.otpResendState.resendAttempts + 1;
+    const isLockedOut = newAttempts >= 5;
+    const lockoutUntil = isLockedOut ? Date.now() + (15 * 60 * 1000) : null;
+    
+    const newState = {
+      ...currentState.otpResendState,
+      resendAttempts: newAttempts,
+      lastResendTime: Date.now(),
+      lockoutUntil,
+      isLockedOut
+    };
+    
+    set({ otpResendState: newState });
+    get().saveOtpResendState(newState);
+  },
+
+  setOtpLockout: (lockoutUntil: number) => {
+    const currentState = get();
+    const newState = {
+      ...currentState.otpResendState,
+      lockoutUntil,
+      isLockedOut: true
+    };
+    set({ otpResendState: newState });
+    get().saveOtpResendState(newState);
+  },
+
+  incrementPasswordResetOtpResendAttempts: () => {
+    const currentState = get();
+    const newAttempts = currentState.otpResendState.passwordResetResendAttempts + 1;
+    const isLockedOut = newAttempts >= 5;
+    const lockoutUntil = isLockedOut ? Date.now() + (15 * 60 * 1000) : null;
+    
+    const newState = {
+      ...currentState.otpResendState,
+      passwordResetResendAttempts: newAttempts,
+      passwordResetLastResendTime: Date.now(),
+      passwordResetLockoutUntil: lockoutUntil,
+      isPasswordResetLockedOut: isLockedOut
+    };
+    
+    set({ otpResendState: newState });
+    get().saveOtpResendState(newState);
+  },
+
+  setPasswordResetOtpLockout: (lockoutUntil: number) => {
+    const currentState = get();
+    const newState = {
+      ...currentState.otpResendState,
+      passwordResetLockoutUntil: lockoutUntil,
+      isPasswordResetLockedOut: true
+    };
+    set({ otpResendState: newState });
+    get().saveOtpResendState(newState);
+  },
+
+  resetPasswordResetOtpState: () => {
+    const currentState = get();
+    const newState = {
+      ...currentState.otpResendState,
+      passwordResetResendAttempts: 0,
+      passwordResetLastResendTime: null,
+      passwordResetLockoutUntil: null,
+      isPasswordResetLockedOut: false
+    };
+    set({ otpResendState: newState });
+    get().saveOtpResendState(newState);
   },
 }));
 

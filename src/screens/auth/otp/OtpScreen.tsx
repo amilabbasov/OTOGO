@@ -44,6 +44,9 @@ const OtpScreen = () => {
     pendingProfileCompletion,
     tempEmail,
     userType: storeUserType,
+    otpResendState,
+    resetOtpResendState,
+    resetPasswordResetOtpState,
   } = useAuthStore();
 
   // Get email and userType from route params or auth store
@@ -52,11 +55,68 @@ const OtpScreen = () => {
   const userType = routeParams?.userType || pendingProfileCompletion.userType || storeUserType;
   const isPasswordReset = routeParams?.isPasswordReset || false;
 
+  console.log('OtpScreen: Component mounted with route params:', route.params);
+
+  // Log when component renders
+  useEffect(() => {
+    console.log('OtpScreen: Component rendered');
+  });
+
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [otpError, setOtpError] = useState('');
+  const [lockoutTimer, setLockoutTimer] = useState<number | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+
+  // Check lockout status on component mount
+  useEffect(() => {
+    if (isPasswordReset) {
+      // Handle password reset lockout
+      if (otpResendState.isPasswordResetLockedOut && otpResendState.passwordResetLockoutUntil) {
+        const now = Date.now();
+        if (now < otpResendState.passwordResetLockoutUntil) {
+          const remainingTime = Math.ceil((otpResendState.passwordResetLockoutUntil - now) / 1000);
+          setLockoutTimer(remainingTime);
+        } else {
+          // Lockout has expired, reset the state
+          resetPasswordResetOtpState();
+        }
+      }
+    } else {
+      // Handle regular registration lockout
+      if (otpResendState.isLockedOut && otpResendState.lockoutUntil) {
+        const now = Date.now();
+        if (now < otpResendState.lockoutUntil) {
+          const remainingTime = Math.ceil((otpResendState.lockoutUntil - now) / 1000);
+          setLockoutTimer(remainingTime);
+        } else {
+          // Lockout has expired, reset the state
+          resetOtpResendState();
+        }
+      }
+    }
+  }, [otpResendState.isLockedOut, otpResendState.lockoutUntil, otpResendState.isPasswordResetLockedOut, otpResendState.passwordResetLockoutUntil, resetOtpResendState, resetPasswordResetOtpState, isPasswordReset]);
+
+  // Handle lockout timer countdown
+  useEffect(() => {
+    if (lockoutTimer !== null && lockoutTimer > 0) {
+      const interval = setInterval(() => {
+        setLockoutTimer(prev => {
+          if (prev === null || prev <= 1) {
+            if (isPasswordReset) {
+              resetPasswordResetOtpState();
+            } else {
+              resetOtpResendState();
+            }
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [lockoutTimer, resetOtpResendState, resetPasswordResetOtpState, isPasswordReset]);
 
   useEffect(() => {
     if (timer === 0) {
@@ -92,7 +152,7 @@ const OtpScreen = () => {
       setOtpError('');
       try {
         if (isPasswordReset) {
-          await resendPasswordResetOtp(email);
+          await forgotPassword(email);
         } else if (userType) {
           await resendOtp(email, userType); 
         } else {
@@ -112,8 +172,6 @@ const OtpScreen = () => {
     const otpCode = otp.join('');
     setOtpError('');
 
-
-
     if (otpCode.length !== OTP_LENGTH) {
       setOtpError(t('Please enter the complete OTP code'));
       return;
@@ -126,7 +184,7 @@ const OtpScreen = () => {
 
     try {
       if (isPasswordReset) {
-        await verifyOtp({ email, token: otpCode, userType: userType as UserType }); 
+        await verifyOtp({ email, token: otpCode, isPasswordReset: true }); 
         Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
         navigation.navigate(Routes.resetPassword, { email, token: otpCode });
       } else if (userType) {
@@ -135,11 +193,53 @@ const OtpScreen = () => {
         setOtpError(t('An error occurred. Please try again. Missing user type or reset context.'));
       }
     } catch (err: any) {
-      console.error('OTP verification error:', err);
       const displayError = authStoreError || t('OTP code is wrong. Please try again.');
       setOtpError(displayError);
     }
   };
+
+  const formatLockoutTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getResendAttemptsText = () => {
+    if (isPasswordReset) {
+      const attemptsLeft = 5 - otpResendState.passwordResetResendAttempts;
+      if (attemptsLeft <= 0) {
+        return 'No password reset attempts remaining';
+      }
+      return `${attemptsLeft} password reset attempts remaining`;
+    } else {
+      const attemptsLeft = 5 - otpResendState.resendAttempts;
+      if (attemptsLeft <= 0) {
+        return 'No attempts remaining';
+      }
+      return `${attemptsLeft} attempts remaining`;
+    }
+  };
+
+  const getResendButtonText = () => {
+    if (isPasswordReset) {
+      if (otpResendState.isPasswordResetLockedOut && lockoutTimer !== null) {
+        return `Password reset locked out (${formatLockoutTime(lockoutTimer)})`;
+      }
+    } else {
+      if (otpResendState.isLockedOut && lockoutTimer !== null) {
+        return `Locked out (${formatLockoutTime(lockoutTimer)})`;
+      }
+    }
+    
+    if (isResendDisabled) {
+      return `${t('Resend Code')} (${String(timer).padStart(2, '0')})`;
+    }
+    return t('Resend Code');
+  };
+
+  const isResendButtonDisabled = isResendDisabled || isLoading || 
+    (isPasswordReset ? (otpResendState.isPasswordResetLockedOut && lockoutTimer !== null) : 
+                      (otpResendState.isLockedOut && lockoutTimer !== null));
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -187,17 +287,38 @@ const OtpScreen = () => {
               {otpError || authStoreError ? (
                 <Text style={styles.otpErrorText}>{otpError || authStoreError}</Text>
               ) : null}
+              
+              {/* Resend attempts info */}
+              {(isPasswordReset ? otpResendState.passwordResetResendAttempts > 0 : otpResendState.resendAttempts > 0) && (
+                <View style={styles.attemptsContainer}>
+                  <Text style={styles.attemptsText}>{getResendAttemptsText()}</Text>
+                </View>
+              )}
+
+              {/* Lockout warning */}
+              {((isPasswordReset && otpResendState.isPasswordResetLockedOut && lockoutTimer !== null) || 
+                (!isPasswordReset && otpResendState.isLockedOut && lockoutTimer !== null)) && (
+                <View style={styles.lockoutContainer}>
+                  <Text style={styles.lockoutText}>
+                    {isPasswordReset 
+                      ? `Too many password reset attempts. Please wait ${formatLockoutTime(lockoutTimer)} before trying again.`
+                      : `Too many resend attempts. Please wait ${formatLockoutTime(lockoutTimer)} before trying again.`
+                    }
+                  </Text>
+                </View>
+              )}
+
               <Text style={styles.didntGetText}>{t("Didn't get the code?")}</Text>
               <TouchableOpacity
-                style={[styles.resendButton, isResendDisabled && styles.resendButtonDisabled]}
-                disabled={isResendDisabled || isLoading}
+                style={[styles.resendButton, isResendButtonDisabled && styles.resendButtonDisabled]}
+                disabled={isResendButtonDisabled}
                 onPress={handleResend}
               >
                 {isLoading ? (
                   <ActivityIndicator size="small" color="#C0C0C0" />
                 ) : (
-                  <Text style={[styles.resendButtonText, isResendDisabled && styles.resendButtonTextDisabled]}>
-                    {t('Resend Code')} {isResendDisabled ? `(${String(timer).padStart(2, '0')})` : ''}
+                  <Text style={[styles.resendButtonText, isResendButtonDisabled && styles.resendButtonTextDisabled]}>
+                    {getResendButtonText()}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -298,6 +419,34 @@ const styles = StyleSheet.create({
     marginTop: -20,
     marginBottom: 20,
   },
+  attemptsContainer: {
+    backgroundColor: '#FFF3CD',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFC107',
+  },
+  attemptsText: {
+    color: '#856404',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  lockoutContainer: {
+    backgroundColor: '#F8D7DA',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#DC3545',
+  },
+  lockoutText: {
+    color: '#721C24',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
   didntGetText: {
     textAlign: 'center',
     color: '#888',
@@ -315,6 +464,7 @@ const styles = StyleSheet.create({
   },
   resendButtonDisabled: {
     opacity: 0.5,
+    backgroundColor: '#F5F5F5',
   },
   resendButtonText: {
     color: '#888',

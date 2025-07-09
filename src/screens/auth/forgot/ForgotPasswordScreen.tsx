@@ -39,11 +39,20 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
     try {
       await forgotPassword(email.trim());
       
+      console.log('About to navigate to OTP screen');
+      // Use Alert with callback like RegisterScreen does
       Alert.alert(
         t('Success'),
-        t('A password reset code has been sent to your email. Please check your inbox.')
+        t('A password reset code has been sent to your email. Please check your inbox.'),
+        [{ 
+          text: t('OK'), 
+          onPress: () => {
+            console.log('Alert OK pressed, navigating to OTP');
+            navigation.navigate(Routes.otp, { email: email.trim(), isPasswordReset: true });
+            console.log('Navigation to OTP completed');
+          }
+        }]
       );
-      navigation.navigate(Routes.otp, { email: email.trim(), isPasswordReset: true });
     } catch (error: any) {
       const errorMessage = authStoreError || t('Failed to send reset instructions. Please try again.');
       Alert.alert(t('Error'), errorMessage);

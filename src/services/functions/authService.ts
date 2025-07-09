@@ -11,7 +11,7 @@ const authService = {
   registerDriver: (userData: RegisterData) => apiClient.post('/api/drivers', userData),
   verifyDriver: (verificationData: OtpVerificationData) => apiClient.post('/api/drivers/verify', verificationData),
   completeDriverProfile: (data: { name: string; surname: string; birthday: string; phone: string; email: string }) => 
-    apiClient.post('/api/drivers/complete-registration-driver', data),
+    apiClient.post('/api/drivers/complete-registration', data),
   resendDriverOtp: (email: string) => apiClient.post('/api/drivers/auth/resend-code', { email }),
 
   // ===== COMPANY PROVIDER REGISTRATION & VERIFICATION =====

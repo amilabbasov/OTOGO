@@ -7,6 +7,17 @@ export interface PendingProfileCompletionState {
   step: 'personalInfo' | 'serviceSelection' | 'products' | 'branches' | null;
 }
 
+export interface OtpResendState {
+  resendAttempts: number;
+  lastResendTime: number | null;
+  lockoutUntil: number | null;
+  isLockedOut: boolean;
+  passwordResetResendAttempts: number;
+  passwordResetLastResendTime: number | null;
+  passwordResetLockoutUntil: number | null;
+  isPasswordResetLockedOut: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -35,6 +46,7 @@ export interface AuthState {
   token: string | null;
   userType: UserType | null;
   pendingProfileCompletion: PendingProfileCompletionState;
+  otpResendState: OtpResendState;
 }
 
 export interface AuthActions {
@@ -57,6 +69,15 @@ export interface AuthActions {
   fetchUserInformation: (forceRefresh?: boolean) => Promise<void>;
   checkAuthenticationState: () => AuthState;
   validateProfileCompletionState: () => { isValid: boolean; errors: string[]; warnings: string[] };
+  resetOtpResendState: () => void;
+  incrementOtpResendAttempts: () => void;
+  setOtpLockout: (lockoutUntil: number) => void;
+  saveOtpResendState: (otpResendState: OtpResendState) => Promise<void>;
+  loadOtpResendState: () => Promise<OtpResendState | null>;
+  ensureApiClientAuth: () => void;
+  incrementPasswordResetOtpResendAttempts: () => void;
+  setPasswordResetOtpLockout: (lockoutUntil: number) => void;
+  resetPasswordResetOtpState: () => void;
 }
 
 export interface RegisterData {
@@ -70,7 +91,8 @@ export interface RegisterData {
 export interface OtpVerificationData {
   email: string;
   token: string;
-  userType: UserType;
+  userType?: UserType;
+  isPasswordReset?: boolean;
 }
 
 export type AuthStore = AuthState & AuthActions;
