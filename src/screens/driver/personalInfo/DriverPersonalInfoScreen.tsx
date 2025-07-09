@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   TextInput,
   TouchableOpacity,
-  Platform,
   Keyboard,
   TouchableWithoutFeedback,
   Alert,
@@ -24,8 +23,11 @@ const DriverPersonalInfoScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<MainScreenProps<Routes.personalInfo>['navigation']>();
   const route = useRoute<MainScreenProps<Routes.personalInfo>['route']>();
-  const { completeProfile, isLoading, pendingProfileCompletion, clearAuth } = useAuthStore();
+  const { completeProfile, isLoading, pendingProfileCompletion, isAuthenticated, clearAuth } = useAuthStore();
   
+
+  
+
   const email = route.params?.email || pendingProfileCompletion?.email || '';
   const userType = route.params?.userType || pendingProfileCompletion?.userType || 'driver';
   
@@ -64,34 +66,11 @@ const DriverPersonalInfoScreen = () => {
   }
 
   const handleContinue = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     // Add diagnostic check before API call
-    const { checkAuthenticationState, validateProfileCompletionState } = useAuthStore.getState();
+    const { checkAuthenticationState } = useAuthStore.getState();
     checkAuthenticationState();
-    
-    const validation = validateProfileCompletionState();
-    if (!validation.isValid) {
-      Alert.alert(
-        t('Error'),
-        t('Unable to complete profile: ') + validation.errors.join(', '),
-        [
-          {
-            text: t('Go to Registration'),
-            onPress: () => {
-              clearAuth();
-            }
-          }
-        ]
-      );
-      return;
-    }
-
-    if (validation.warnings.length > 0) {
-      console.warn('Profile completion warnings:', validation.warnings);
-    }
 
     const isoDate = toIsoDate(dateOfBirth);
     const result = await completeProfile(
@@ -104,42 +83,10 @@ const DriverPersonalInfoScreen = () => {
     );
     
     if (result.success) {
+      // Navigation will be handled automatically by MainRouter based on state change
       console.log('Profile completed successfully, next step:', result.nextStep);
     } else {
-      if (result.message && result.message.includes('not found')) {
-        Alert.alert(
-          t('Registration Required'), 
-          t('Your account was not found. This may happen if there was an issue during registration. Please try registering again with OTP verification.'),
-          [
-            {
-              text: t('Go to Registration'),
-              onPress: () => {
-                clearAuth();
-              }
-            },
-            {
-              text: t('Try Again'),
-              onPress: () => {
-                // Retry logic could be added here
-              },
-              style: 'cancel'
-            }
-          ]
-        );
-      } else {
-        Alert.alert(
-          t('Error'), 
-          result.message || t('Failed to complete profile. Please try again.'),
-          [
-            {
-              text: t('OK'),
-              onPress: () => {
-                // Could add retry logic here
-              }
-            }
-          ]
-        );
-      }
+      Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }
   };
 

@@ -27,7 +27,6 @@ export const MainRouter = () => {
   const currentUserType: UserType | null = storeUserType || pendingProfileCompletion.userType;
 
   if (!isAuthenticated && !pendingProfileCompletion.isPending) {
-    console.warn('MainRouter: Unexpected state - not authenticated and no pending profile. This should be handled by Router.tsx');
     return null;
   }
 
@@ -66,11 +65,9 @@ export const MainRouter = () => {
   }
 
   if (pendingProfileCompletion.isPending) {
-    let initialRouteName = Routes.otp;
+    let initialRouteName = Routes.personalInfo;
 
     if (isAuthenticated && token && user) {
-      // If user is authenticated (logged in) and we have pending profile completion,
-      // it means they need to complete their profile information
       switch (pendingProfileCompletion.step) {
         case 'personalInfo':
           initialRouteName = Routes.personalInfo;
@@ -85,8 +82,6 @@ export const MainRouter = () => {
           initialRouteName = Routes.branches;
           break;
         default:
-          // For corporate providers: company name and phone
-          // For other user types: name and surname
           const hasBasicInfo = currentUserType === 'company_provider' 
             ? (user && user.companyName && user.phone)
             : (user && user.name && user.surname);
@@ -100,8 +95,6 @@ export const MainRouter = () => {
           }
       }
     } else if (!isAuthenticated && pendingProfileCompletion.isPending) {
-      // If user is not authenticated but has pending profile completion,
-      // it means they are in registration flow and need OTP verification
       initialRouteName = Routes.otp;
     }
 
@@ -128,7 +121,5 @@ export const MainRouter = () => {
     );
   }
 
-  // Fallback - should not reach here
-  console.warn('MainRouter: Unexpected state, defaulting to auth');
   return null;
 };

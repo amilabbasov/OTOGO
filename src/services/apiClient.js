@@ -1,4 +1,3 @@
-// apiClient.ts
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -38,23 +37,10 @@ const PUBLIC_ENDPOINTS = [
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('userToken'); // Fixed: use 'userToken' instead of 'authToken'
+      const token = await AsyncStorage.getItem('userToken');
       
-      console.log('API Request interceptor:', {
-        url: config.url,
-        method: config.method,
-        hasToken: !!token,
-        isPublicEndpoint: PUBLIC_ENDPOINTS.includes(config.url || ''),
-        headers: config.headers
-      });
-
       if (token && !PUBLIC_ENDPOINTS.includes(config.url || '')) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('API Request: Added Authorization header for private endpoint');
-      } else if (PUBLIC_ENDPOINTS.includes(config.url || '')) {
-        console.log('API Request: Public endpoint, no Authorization header needed');
-      } else {
-        console.log('API Request: No token available for private endpoint');
       }
     } catch (error) {
       console.error('API Request interceptor error:', error);
@@ -69,27 +55,14 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => {
-    console.log('API Response successful:', {
-      url: response.config.url,
-      status: response.status,
-      data: response.data ? 'data present' : 'no data'
-    });
     return response;
   },
   async (error) => {
     if (error.response) {
       if (error.response.status === 401 || error.response.status === 403) {
-        console.warn(`API Error ${error.response.status}: Token invalid or forbidden. Clearing token.`);
         await AsyncStorage.removeItem('userToken');
       }
     }
-    console.error('API Response error:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message
-    });
     return Promise.reject(error);
   }
 );
