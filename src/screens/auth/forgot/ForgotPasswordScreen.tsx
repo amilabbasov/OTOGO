@@ -50,8 +50,7 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
         [{
           text: t('OK'),
           onPress: () => {
-            console.log('DEBUG: Alert OK button pressed. Attempting navigation to PasswordResetOtp.');
-            navigation.navigate(Routes.passwordResetOtp, { email: email.trim() });
+            console.log('DEBUG: Alert OK button pressed. NO navigation needed, AuthRouter handles it.');
           }
         }]
       );

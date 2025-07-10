@@ -66,6 +66,7 @@ const Router = () => {
         >
           <RootStack.Screen
             name={Routes.auth}
+            key={isPasswordResetFlowActive ? 'auth-reset-flow' : 'auth-main-flow'}
             component={contentComponent}
             options={{ headerShown: false }}
           />

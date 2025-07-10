@@ -48,6 +48,7 @@ export interface AuthState {
   pendingProfileCompletion: PendingProfileCompletionState;
   otpResendState: OtpResendState;
   isPasswordResetFlowActive: boolean;
+  isOtpVerifiedForPasswordReset: boolean;
 }
 
 export interface AuthActions {

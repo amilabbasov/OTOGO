@@ -9,23 +9,35 @@ import ResetPasswordScreen from '../screens/auth/resetPassword/ResetPasswordScre
 import OnboardingPagerScreen from '../screens/auth/onboarding/OnboardingPagerScreen';
 import { Routes } from './routes';
 import { AuthStackParamList } from './types';
+import useAuthStore from '../stores/auth/authStore';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AuthRouter = () => {
+  const { isPasswordResetFlowActive, isOtpVerifiedForPasswordReset } = useAuthStore();
+
+  let initialRouteName: keyof AuthStackParamList = Routes.login;
+
+  if (isPasswordResetFlowActive) {
+    if (isOtpVerifiedForPasswordReset) {
+      initialRouteName = Routes.resetPassword;
+    } else {
+      initialRouteName = Routes.passwordResetOtp;
+    }
+  }
+
+  console.log(`AuthRouter: initialRouteName is ${initialRouteName}`);
 
   return (
     <AuthStack.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{ headerShown: false }}
-      initialRouteName={Routes.login}
     >
       <AuthStack.Screen name={Routes.login} component={LoginScreen} />
       <AuthStack.Screen name={Routes.register} component={RegisterScreen} />
       <AuthStack.Screen name={Routes.forgotPassword} component={ForgotPasswordScreen} />
-      <AuthStack.Screen name={Routes.otp} component={OtpScreen} />
       <AuthStack.Screen name={Routes.passwordResetOtp} component={PasswordResetOtpScreen} />
       <AuthStack.Screen name={Routes.resetPassword} component={ResetPasswordScreen} />
-      <AuthStack.Screen name={Routes.onboardingPager} component={OnboardingPagerScreen} />
     </AuthStack.Navigator>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,20 +20,44 @@ import { Routes } from '../../../navigations/routes';
 import useAuthStore from '../../../stores/auth/authStore';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { colors } from '../../../theme/color';
-import { metrics } from '../../../theme/metrics';
 
 const ResetPasswordScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<AuthScreenProps<Routes.resetPassword>['navigation']>();
   const route = useRoute<AuthScreenProps<Routes.resetPassword>['route']>();
-  const { email, token } = route.params;
-  const { updatePassword, isLoading, clearPasswordResetFlow } = useAuthStore();
   
+  const routeEmail = route.params?.email; 
+  const routeToken = route.params?.token;
+
+  const { updatePassword, isLoading, clearPasswordResetFlow, tempEmail, isOtpVerifiedForPasswordReset } = useAuthStore();
+  
+  const currentEmail = routeEmail || tempEmail;
+  const currentToken = routeToken;
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    if (!currentEmail || !currentToken || !isOtpVerifiedForPasswordReset) {
+      console.warn("ResetPasswordScreen: Email, token, or OTP verification state is missing. Redirecting to Forgot Password.");
+      Alert.alert(
+        t('Session expired or invalid'), 
+        t('Please restart the password reset process.'),
+        [
+          { 
+            text: t('OK'), 
+            onPress: () => {
+              clearPasswordResetFlow();
+              navigation.replace(Routes.forgotPassword);
+            }
+          }
+        ]
+      );
+    }
+  }, [currentEmail, currentToken, isOtpVerifiedForPasswordReset, navigation, clearPasswordResetFlow, t]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -55,10 +79,17 @@ const ResetPasswordScreen = () => {
   };
 
   const handleResetPassword = async () => {
+    if (!currentEmail || !currentToken) {
+        Alert.alert(t('Error'), t('Email or token is missing. Please restart the process.'));
+        clearPasswordResetFlow();
+        navigation.replace(Routes.forgotPassword);
+        return;
+    }
+
     if (!validateForm()) return;
     
     try {
-      await updatePassword({ email, token, newPassword, repeatPassword: confirmPassword });
+      await updatePassword({ email: currentEmail, token: currentToken, newPassword, repeatPassword: confirmPassword });
       Alert.alert(
         t('Success'),
         t('Password has been reset successfully'),
@@ -97,7 +128,6 @@ const ResetPasswordScreen = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity 
               onPress={() => navigation.goBack()}
@@ -110,7 +140,6 @@ const ResetPasswordScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Content */}
           <View style={styles.content}>
             <Text style={styles.title}>Reset{'\n'}Your Password</Text>
             
@@ -118,7 +147,6 @@ const ResetPasswordScreen = () => {
               Please enter your new password
             </Text>
 
-            {/* New Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>New Password</Text>
               <View style={styles.passwordInputContainer}>
@@ -153,7 +181,6 @@ const ResetPasswordScreen = () => {
               )}
             </View>
 
-            {/* Confirm Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Confirm Password</Text>
               <View style={styles.passwordInputContainer}>
@@ -188,14 +215,13 @@ const ResetPasswordScreen = () => {
               )}
             </View>
 
-            {/* Reset Password Button */}
             <TouchableOpacity 
               style={[styles.resetButton, isLoading && styles.resetButtonDisabled]}
               onPress={handleResetPassword}
               disabled={isLoading || !newPassword || !confirmPassword}
             >
               <Text style={styles.resetButtonText}>
-                {isLoading ? 'Resetting...' : 'Reset Password'}
+                {isLoading ? t('Resetting...') : t('Reset Password')}
               </Text>
             </TouchableOpacity>
           </View>

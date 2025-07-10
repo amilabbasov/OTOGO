@@ -14,16 +14,17 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { Routes } from '../../../navigations/routes';
 import useAuthStore from '../../../stores/auth/authStore';
+import { SvgImage } from '../../../components/svgImage/SvgImage';
+import { AuthScreenProps } from '../../../navigations/types';
 
 const OTP_LENGTH = 6;
 const RESEND_TIME = 90;
 
-const PasswordResetOtpScreen = () => {
+const PasswordResetOtpScreen = ({ navigation }: AuthScreenProps<Routes.passwordResetOtp>) => {
   const { t } = useTranslation();
-  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   
   const { 
@@ -34,6 +35,7 @@ const PasswordResetOtpScreen = () => {
     tempEmail,
     otpResendState,
     resetPasswordResetOtpState,
+    clearPasswordResetFlow, 
   } = useAuthStore();
 
   const email = route.params?.email || tempEmail || '';
@@ -45,7 +47,6 @@ const PasswordResetOtpScreen = () => {
   const [lockoutTimer, setLockoutTimer] = useState<number | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  // Check lockout status on component mount
   useEffect(() => {
     if (otpResendState.isPasswordResetLockedOut && otpResendState.passwordResetLockoutUntil) {
       const now = Date.now();
@@ -58,7 +59,6 @@ const PasswordResetOtpScreen = () => {
     }
   }, [otpResendState.isPasswordResetLockedOut, otpResendState.passwordResetLockoutUntil, resetPasswordResetOtpState]);
 
-  // Handle lockout timer countdown
   useEffect(() => {
     if (lockoutTimer !== null && lockoutTimer > 0) {
       const interval = setInterval(() => {
@@ -74,7 +74,6 @@ const PasswordResetOtpScreen = () => {
     }
   }, [lockoutTimer, resetPasswordResetOtpState]);
 
-  // Handle resend timer
   useEffect(() => {
     if (timer === 0) {
       setIsResendDisabled(false);
@@ -135,7 +134,9 @@ const PasswordResetOtpScreen = () => {
     try {
       await verifyOtp({ email, token: otpCode, isPasswordReset: true }); 
       Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
-      navigation.navigate(Routes.resetPassword, { email, token: otpCode });
+      
+      navigation.replace(Routes.resetPassword, { email, token: otpCode }); 
+      
     } catch (err: any) {
       const displayError = authStoreError || t('OTP code is wrong. Please try again.');
       setOtpError(displayError);
@@ -180,6 +181,23 @@ const PasswordResetOtpScreen = () => {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
           >
             <View style={styles.innerContent}>
+              {/* Header Back Button */}
+              <View style={styles.header}>
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.goBack();
+                    clearPasswordResetFlow(); 
+                  }}
+                >
+                  <SvgImage 
+                    source={require('../../../assets/svg/auth/goBack.svg')}
+                    width={40}
+                    height={40}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Screen Title and Subtitle */}
               <View style={styles.header}>
                 <Text style={styles.title}>{t('Verify')}</Text>
                 <Text style={styles.title}>{t('your email')}</Text>
@@ -187,6 +205,8 @@ const PasswordResetOtpScreen = () => {
                   {t('To reset your password, enter the 6 digit OTP code that we sent to your email.')}
                 </Text>
               </View>
+
+              {/* OTP Input Fields */}
               <View style={styles.otpRow}>
                 {otp.map((digit, idx) => (
                   <TextInput
@@ -257,18 +277,6 @@ const PasswordResetOtpScreen = () => {
                 <Text style={styles.verifyButtonText}>
                   {isLoading ? t('Verifying...') : t('Verify')}
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={() => {
-                  if (navigation.canGoBack()) {
-                    navigation.goBack();
-                  } else {
-                    useAuthStore.getState().clearAuth();
-                  }
-                }}
-              >
-                <Text style={styles.backButtonText}>{t('Back')}</Text>
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
@@ -411,20 +419,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  backButton: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 14,
-  },
-  backButtonText: {
-    color: '#111',
-    fontSize: 14,
-    fontWeight: '500',
-  },
 });
 
-export default PasswordResetOtpScreen; 
+export default PasswordResetOtpScreen;
