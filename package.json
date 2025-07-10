@@ -31,7 +31,8 @@
     "react-native-svg": "^15.12.0",
     "react-native-svg-transformer": "^1.5.1",
     "react-native-vector-icons": "^10.2.0",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "zustand-persist": "^0.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
