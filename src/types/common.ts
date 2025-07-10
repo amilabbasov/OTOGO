@@ -1,4 +1,12 @@
+// src/types/common.ts
+
 export type UserType = 'driver' | 'individual_provider' | 'company_provider';
+
+// Login Credentials interfeysi əlavə edildi
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
 
 export interface PendingProfileCompletionState {
   isPending: boolean;
@@ -12,6 +20,7 @@ export interface OtpResendState {
   lastResendTime: number | null;
   lockoutUntil: number | null;
   isLockedOut: boolean;
+  
   passwordResetResendAttempts: number;
   passwordResetLastResendTime: number | null;
   passwordResetLockoutUntil: number | null;
@@ -21,11 +30,10 @@ export interface OtpResendState {
 export interface User {
   id: string;
   email: string;
-  userType: UserType;
   name?: string;
   surname?: string;
-  birthday?: string;
   phone?: string;
+  birthday?: string;
   companyName?: string;
   description?: string;
 }
@@ -37,6 +45,7 @@ export interface Service {
   updatedAt: string;
 }
 
+// Authentication state propertiləri
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -46,16 +55,18 @@ export interface AuthState {
   token: string | null;
   userType: UserType | null;
   pendingProfileCompletion: PendingProfileCompletionState;
-  otpResendState: OtpResendState;
   isPasswordResetFlowActive: boolean;
   isOtpVerifiedForPasswordReset: boolean;
+  otpResendState: OtpResendState; 
+  passwordResetToken: string | null;
 }
 
+// Authentication actions propertiləri
 export interface AuthActions {
   setToken: (token: string) => Promise<void>;
   setUserData: (userData: { user: User; userType: UserType; pendingProfileCompletionStatus: boolean; email: string }) => Promise<void>;
   removeToken: () => Promise<void>;
-  login: (credentials: { email: string; password: string }) => Promise<any>;
+  login: (credentials: LoginCredentials) => Promise<any>; // LoginCredentials əlavə edildi
   logout: () => Promise<void>;
   initializeAuth: () => Promise<void>;
   register: (userData: RegisterData) => Promise<any>;
@@ -81,7 +92,10 @@ export interface AuthActions {
   setPasswordResetOtpLockout: (lockoutUntil: number) => void;
   resetPasswordResetOtpState: () => void;
   clearPasswordResetFlow: () => void;
+  clearCorruptedData: () => Promise<void>;
 }
+
+export type AuthStore = AuthState & AuthActions;
 
 export interface RegisterData {
   email: string;
@@ -97,5 +111,3 @@ export interface OtpVerificationData {
   userType?: UserType;
   isPasswordReset?: boolean;
 }
-
-export type AuthStore = AuthState & AuthActions;

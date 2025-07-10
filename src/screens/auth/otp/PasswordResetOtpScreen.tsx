@@ -133,9 +133,11 @@ const PasswordResetOtpScreen = ({ navigation }: AuthScreenProps<Routes.passwordR
 
     try {
       await verifyOtp({ email, token: otpCode, isPasswordReset: true }); 
-      Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
       
-      navigation.replace(Routes.resetPassword, { email, token: otpCode }); 
+      setTimeout(() => {
+        Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
+        navigation.replace(Routes.resetPassword, { email, token: otpCode });
+      }, 100);
       
     } catch (err: any) {
       const displayError = authStoreError || t('OTP code is wrong. Please try again.');

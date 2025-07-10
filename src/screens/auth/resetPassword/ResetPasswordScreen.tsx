@@ -12,6 +12,7 @@ import {
   Alert,
   StatusBar,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -24,15 +25,14 @@ import { colors } from '../../../theme/color';
 const ResetPasswordScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<AuthScreenProps<Routes.resetPassword>['navigation']>();
-  const route = useRoute<AuthScreenProps<Routes.resetPassword>['route']>();
-  
-  const routeEmail = route.params?.email; 
-  const routeToken = route.params?.token;
+  // route.params-dan tokeni birbaşa götürmürük, çünki bu OTP kodu ola bilər.
+  // const routeEmail = route.params?.email; // Bu hələ də faydalı ola bilər, amma əsas tempEmail-dir.
+  // const routeToken = route.params?.token; // Bunu artıq istifadə etmirik
 
-  const { updatePassword, isLoading, clearPasswordResetFlow, tempEmail, isOtpVerifiedForPasswordReset } = useAuthStore();
+  const { updatePassword, isLoading, clearPasswordResetFlow, tempEmail, isOtpVerifiedForPasswordReset, passwordResetToken } = useAuthStore();
   
-  const currentEmail = routeEmail || tempEmail;
-  const currentToken = routeToken;
+  const currentEmail = tempEmail;
+  const currentToken = passwordResetToken;
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,6 +41,8 @@ const ResetPasswordScreen = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
+    console.log('ResetPasswordScreen useEffect check:', { currentEmail, currentToken, isOtpVerifiedForPasswordReset });
+
     if (!currentEmail || !currentToken || !isOtpVerifiedForPasswordReset) {
       console.warn("ResetPasswordScreen: Email, token, or OTP verification state is missing. Redirecting to Forgot Password.");
       Alert.alert(
@@ -89,7 +91,7 @@ const ResetPasswordScreen = () => {
     if (!validateForm()) return;
     
     try {
-      await updatePassword({ email: currentEmail, token: currentToken, newPassword, repeatPassword: confirmPassword });
+      await updatePassword({ email: currentEmail, token: currentToken, newPassword, repeatPassword: confirmPassword }); // <<<< currentToken istifadə edirik
       Alert.alert(
         t('Success'),
         t('Password has been reset successfully'),
@@ -117,6 +119,16 @@ const ResetPasswordScreen = () => {
       }));
     }
   };
+
+  // Əgər dəyərlər yoxdursa, yükləmə göstərin və ya boş bir View qaytarın
+  if (!currentEmail || !currentToken || !isOtpVerifiedForPasswordReset) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>{t('Loading password reset flow...')}</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -310,6 +322,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+  },
+  loadingContainer: { // Yeni stil
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: { // Yeni stil
+    marginTop: 10,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
 });
 
