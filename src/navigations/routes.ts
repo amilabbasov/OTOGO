@@ -20,6 +20,7 @@ export enum Routes {
     serviceSelection = 'serviceSelection',
     products = 'products',
     branches = 'branches',
+    carSelection = 'carSelection',
     
     // Driver routes
     driverHome = 'driverHome',
@@ -37,4 +38,5 @@ export enum Routes {
     // Tab navigators
     driverTabs = 'driverTabs',
     providerTabs = 'providerTabs',
+    selectedCarSummary = 'selectedCarSummary',
 }

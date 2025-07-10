@@ -13,6 +13,7 @@ export interface PendingProfileCompletionState {
   userType: UserType | null;
   email: string | null;
   step: 'personalInfo' | 'serviceSelection' | 'products' | 'branches' | null;
+  firstName?: string;
 }
 
 export interface OtpResendState {

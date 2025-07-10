@@ -21,7 +21,7 @@ import useAuthStore from '../../../stores/auth/authStore';
 import { UserType } from '../../../types/common';
 
 const OTP_LENGTH = 6;
-const RESEND_TIME = 90;
+const RESEND_TIME = 10;
 
 type OtpRouteParams = {
   email: string;

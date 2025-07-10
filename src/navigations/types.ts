@@ -25,6 +25,8 @@ export type MainStackParamList = {
   [Routes.branches]: { userType: UserType };
   [Routes.driverTabs]: undefined;
   [Routes.providerTabs]: undefined;
+  [Routes.carSelection]: undefined;
+  [Routes.selectedCarSummary]: undefined;
 };
 
 export type AuthScreenProps<T extends keyof AuthStackParamList> = 

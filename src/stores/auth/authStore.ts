@@ -258,14 +258,15 @@ const useAuthStore = create<AuthStore>()(
             await get().fetchUserInformation(true);
           } catch (fetchError: any) {
             if (fetchError?.response?.status === 400) {
-              set({
+              set((state) => ({
                 pendingProfileCompletion: {
+                  ...state.pendingProfileCompletion,
                   isPending: true,
                   userType: userType,
                   email: credentials.email,
                   step: 'personalInfo',
                 },
-              });
+              }));
             } else {
               throw fetchError;
             }
@@ -407,16 +408,15 @@ const useAuthStore = create<AuthStore>()(
               throw new Error('register: Yanlış istifadəçi növü seçilib.');
           }
 
-          set({
-            isLoading: false,
-            error: null,
+          set((state) => ({
             pendingProfileCompletion: {
+              ...state.pendingProfileCompletion,
               isPending: true,
               userType: userType,
               email: email,
               step: 'personalInfo',
             },
-          });
+          }));
           return response.data;
         } catch (error: any) {
           const errorMessage = error.response?.data?.message || 'Qeydiyyat zamanı səhv baş verdi.';

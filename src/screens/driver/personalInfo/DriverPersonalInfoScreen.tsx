@@ -23,10 +23,7 @@ const DriverPersonalInfoScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<MainScreenProps<Routes.personalInfo>['navigation']>();
   const route = useRoute<MainScreenProps<Routes.personalInfo>['route']>();
-  const { completeProfile, isLoading, pendingProfileCompletion, isAuthenticated, clearAuth } = useAuthStore();
-  
-
-  
+  const { completeProfile, isLoading, pendingProfileCompletion, setPendingProfileCompletionState } = useAuthStore();
 
   const email = route.params?.email || pendingProfileCompletion?.email || '';
   const userType = route.params?.userType || pendingProfileCompletion?.userType || 'driver';
@@ -127,7 +124,17 @@ const DriverPersonalInfoScreen = () => {
       );
       
       if (result.success) {
-        // Navigation will be handled automatically by MainRouter based on state change
+        if (userType === 'driver') {
+          // Set the next step to serviceSelection, MainRouter will handle navigation
+          setPendingProfileCompletionState({
+            ...pendingProfileCompletion,
+            isPending: true,
+            userType: 'driver',
+            email,
+            step: 'serviceSelection',
+            firstName: firstName.trim(),
+          });
+        }
       } else {
         Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
       }
@@ -239,7 +246,7 @@ const DriverPersonalInfoScreen = () => {
               disabled={!hasRequiredFields || isLoading}
             >
               <Text style={styles.continueButtonText}>
-                {isLoading ? 'Saving...' : 'Complete Registration'}
+                {isLoading ? 'Saving...' : 'Next'}
               </Text>
               <Text style={styles.continueButtonArrow}>→</Text>
             </TouchableOpacity>

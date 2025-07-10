@@ -3343,9 +3343,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.5.173:
-  version "1.5.181"
-  resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.181.tgz"
-  integrity sha512-+ISMj8OIQ+0qEeDj14Rt8WwcTOiqHyAB+5bnK1K7xNNLjBJ4hRCQfUkw8RWtcLbfBzDwc15ZnKH0c7SNOfwiyA==
+  version "1.5.182"
+  resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.182.tgz"
+  integrity sha512-Lv65Btwv9W4J9pyODI6EWpdnhfvrve/us5h1WspW8B2Fb0366REPtY3hX7ounk1CkV/TBjWCEvCBBbYbmV0qCA==
 
 emittery@^0.13.1:
   version "0.13.1"
