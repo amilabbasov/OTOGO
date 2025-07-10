@@ -12,8 +12,7 @@ const apiClient = axios.create({
 
 const PUBLIC_ENDPOINTS = [
   '/api/auth/login',
-  '/api/auth/logout',
-
+  
   '/api/drivers',
   '/api/company-providers',
   '/api/individual-providers',
@@ -39,10 +38,14 @@ apiClient.interceptors.request.use(
     try {
       const token = await AsyncStorage.getItem('userToken');
       
-      if (token && !PUBLIC_ENDPOINTS.includes(config.url || '')) {
+      if (PUBLIC_ENDPOINTS.includes(config.url || '')) {
+        delete config.headers.Authorization;
+      } 
+      else if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
+      console.error("Axios Interceptor Request Error:", error);
     }
     return config;
   },
@@ -59,6 +62,7 @@ apiClient.interceptors.response.use(
     if (error.response) {
       if (error.response.status === 401 || error.response.status === 403) {
         await AsyncStorage.removeItem('userToken');
+        delete apiClient.defaults.headers.common['Authorization'];
       }
     }
     return Promise.reject(error);

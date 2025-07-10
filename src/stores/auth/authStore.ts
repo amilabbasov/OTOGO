@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import authService from '../../services/functions/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { AuthState, User, UserType, RegisterData, OtpVerificationData, LoginCredentials, OtpResendState, PendingProfileCompletionState, AuthStore } from '../../types/common';
+import { User, UserType, RegisterData, OtpVerificationData, LoginCredentials, OtpResendState, PendingProfileCompletionState, AuthStore } from '../../types/common';
 import apiClient from '../../services/apiClient';
 
 const initialFullOtpResendState: OtpResendState = {
@@ -124,7 +124,7 @@ const useAuthStore = create<AuthStore>()(
           otpResendState: initialFullOtpResendState,
           isPasswordResetFlowActive: false,
           isOtpVerifiedForPasswordReset: false,
-          passwordResetToken: null, // <<<<<< BURADA DA SIFIRLA
+          passwordResetToken: null,
         });
         get().removeToken();
       },
@@ -451,6 +451,7 @@ const useAuthStore = create<AuthStore>()(
 
         set({ isLoading: true, error: null });
         try {
+          console.log('resendOtp: Attempting to resend OTP for:', { email, userType }); // Debug log
           let response;
           switch (userType) {
             case 'driver':
@@ -465,13 +466,27 @@ const useAuthStore = create<AuthStore>()(
             default:
               throw new Error('resendOtp: Yanlış istifadəçi növü seçilib, OTP yenidən göndərilə bilmədi.');
           }
+          console.log('resendOtp: API Response SUCCEEDED:', response.data); // Debug log
 
           get().incrementOtpResendAttempts();
 
           set({ isLoading: false, error: null });
           return response.data;
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'OTP-ni yenidən göndərmək mümkün olmadı.';
+          console.error('resendOtp: API Response FAILED:', error.response?.data || error.message); // Debug log
+          
+          let errorMessage = 'OTP-ni yenidən göndərmək mümkün olmadı.';
+          
+          if (error.response?.status === 403) {
+            errorMessage = 'OTP yenidən göndərmə cəhdi bloklanıb. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin.';
+          } else if (error.response?.status === 429) {
+            errorMessage = 'Çox sayda cəhd. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin.';
+          } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           set({ error: errorMessage, isLoading: false });
           throw error;
         }
@@ -510,7 +525,18 @@ const useAuthStore = create<AuthStore>()(
           set({ isLoading: false, error: null });
           return response.data;
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'OTP kodu yenidən göndərilərkən səhv baş verdi.';
+          let errorMessage = 'OTP kodu yenidən göndərilərkən səhv baş verdi.';
+          
+          if (error.response?.status === 403) {
+            errorMessage = 'OTP yenidən göndərmə cəhdi bloklanıb. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin.';
+          } else if (error.response?.status === 429) {
+            errorMessage = 'Çox sayda cəhd. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin.';
+          } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           set({ error: errorMessage, isLoading: false });
           throw error;
         }
@@ -923,7 +949,7 @@ const useAuthStore = create<AuthStore>()(
         isPasswordResetFlowActive: state.isPasswordResetFlowActive,
         isOtpVerifiedForPasswordReset: state.isOtpVerifiedForPasswordReset,
         otpResendState: state.otpResendState,
-        passwordResetToken: state.passwordResetToken, // <<<<<< BURADA DA ƏLAVƏ OLUNDU
+        passwordResetToken: state.passwordResetToken,
       }),
       onRehydrateStorage: (state) => {
         if (state) {
@@ -931,11 +957,13 @@ const useAuthStore = create<AuthStore>()(
             apiClient.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
           }
           const now = Date.now();
+          // Ümumi OTP kilidini təmizlə
           if (state.otpResendState.lockoutUntil && now > state.otpResendState.lockoutUntil) {
             state.otpResendState.isLockedOut = false;
             state.otpResendState.lockoutUntil = null;
             state.otpResendState.resendAttempts = 0;
           }
+          // Şifrə sıfırlama OTP kilidini təmizlə
           if (state.otpResendState.passwordResetLockoutUntil && now > state.otpResendState.passwordResetLockoutUntil) {
             state.otpResendState.isPasswordResetLockedOut = false;
             state.otpResendState.passwordResetLockoutUntil = null;

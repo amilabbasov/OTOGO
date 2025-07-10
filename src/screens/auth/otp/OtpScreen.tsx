@@ -32,8 +32,8 @@ const OtpScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<AuthScreenProps<Routes.otp>['route']>();
-  
-  const { 
+
+  const {
     verifyOtp,
     resendOtp,
     isLoading,
@@ -117,11 +117,19 @@ const OtpScreen = () => {
   };
 
   const handleResend = async () => {
+    console.log("handleResend: Starting resend process.");
+    console.log("handleResend: Current email:", email); // ƏLAVƏ EDİN
+    console.log("handleResend: Current userType:", userType); // ƏLAVƏ EDİN
+    console.log("handleResend: isResendDisabled:", isResendDisabled); // ƏLAVƏ EDİN
+    console.log("handleResend: isLoading (from store):", isLoading); // ƏLAVƏ EDİN
+    console.log("handleResend: otpResendState.isLockedOut:", otpResendState.isLockedOut); // ƏLAVƏ EDİN
+    console.log("handleResend: lockoutTimer:", lockoutTimer); // ƏLAVƏ EDİN
+
     if (!isResendDisabled) {
       setOtpError('');
       try {
         if (userType) {
-          await resendOtp(email, userType); 
+          await resendOtp(email, userType);
         } else {
           setOtpError(t('Failed to resend OTP code: User type is missing.'));
           return;
@@ -179,14 +187,14 @@ const OtpScreen = () => {
     if (otpResendState.isLockedOut && lockoutTimer !== null) {
       return `Locked out (${formatLockoutTime(lockoutTimer)})`;
     }
-    
+
     if (isResendDisabled) {
       return `${t('Resend Code')} (${String(timer).padStart(2, '0')})`;
     }
     return t('Resend Code');
   };
 
-  const isResendButtonDisabled = isResendDisabled || isLoading || 
+  const isResendButtonDisabled = isResendDisabled || isLoading ||
     (otpResendState.isLockedOut && lockoutTimer !== null);
 
   return (
@@ -235,7 +243,7 @@ const OtpScreen = () => {
               {otpError || authStoreError ? (
                 <Text style={styles.otpErrorText}>{otpError || authStoreError}</Text>
               ) : null}
-              
+
               {/* Resend attempts info */}
               {otpResendState.resendAttempts > 0 && (
                 <View style={styles.attemptsContainer}>
@@ -277,8 +285,8 @@ const OtpScreen = () => {
                   {isLoading ? t('Verifying...') : t('Verify')}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.backButton} 
+              <TouchableOpacity
+                style={styles.backButton}
                 onPress={() => {
                   if (navigation.canGoBack()) {
                     navigation.goBack();
