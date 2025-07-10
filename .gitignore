@@ -8,10 +8,8 @@ yarn-error.log*
 .eslintcache
 
 # Logs
-logs
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
 
 # OSX
 .DS_Store
@@ -24,40 +22,40 @@ ehthumbs.db
 Desktop.ini
 
 # Android
-android/build/
 android/.gradle/
+android/build/
 android/app/build/
 android/app/.cxx/
 android/app/.idea/
 android/app/release/
 android/app/debug/
-android/key.jks # If you store your release key in the project root, exclude it
-android/keystores/ # Folder for storing keystores
+android/key.jks
+android/keystores/
 
 # iOS
 ios/build/
 ios/Pods/
 ios/.xcode.env.local
-ios/*.xcworkspace/
-ios/*.xcodeproj/project.xcworkspace/
+# Ignore user-specific and derived data in Xcode projects
+ios/*.xcworkspace/xcuserdata/
 ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/
 ios/.bundle/
 ios/*.ipa
 ios/*.xcarchive
 
-# React Native specific
+# React Native/Expo
 .expo/
 .react-native/
-.vscode/ # VS Code settings and cache, if you want to ignore them
-.idea/ # IntelliJ/WebStorm project files
+
+# IDEs and editors
+.vscode/
+.idea/
 
 # Environment variables
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env # Catches all .env files
+.env.*
+*.env
 
 # Bundle / Release files
 *.bundle
@@ -68,6 +66,25 @@ ios/*.xcarchive
 # Local dev server
 /tmp/
 
-# If you use Fastlane
+# Fastlane
 fastlane/report.xml
 fastlane/test_output/
+
+# Misc
+*.swp
+*.swo
+
+# Test/coverage
+coverage/
+
+# macOS system files
+*.DS_Store
+
+# Ruby (for CocoaPods/Fastlane)
+Gemfile.lock
+
+# Ignore metro cache
+.metro-cache/
+
+# Ignore jest cache
+jest-cache/

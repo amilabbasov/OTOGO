@@ -27,7 +27,7 @@ const ResetPasswordScreen = () => {
   const navigation = useNavigation<AuthScreenProps<Routes.resetPassword>['navigation']>();
   const route = useRoute<AuthScreenProps<Routes.resetPassword>['route']>();
   const { email, token } = route.params;
-  const { updatePassword, isLoading } = useAuthStore();
+  const { updatePassword, isLoading, clearPasswordResetFlow } = useAuthStore();
   
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -65,7 +65,10 @@ const ResetPasswordScreen = () => {
         [
           {
             text: t('OK'),
-            onPress: () => navigation.navigate(Routes.login),
+            onPress: () => {
+              clearPasswordResetFlow();
+              navigation.navigate(Routes.login);
+            }
           },
         ]
       );

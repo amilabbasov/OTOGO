@@ -47,6 +47,7 @@ export interface AuthState {
   userType: UserType | null;
   pendingProfileCompletion: PendingProfileCompletionState;
   otpResendState: OtpResendState;
+  isPasswordResetFlowActive: boolean;
 }
 
 export interface AuthActions {
@@ -78,6 +79,7 @@ export interface AuthActions {
   incrementPasswordResetOtpResendAttempts: () => void;
   setPasswordResetOtpLockout: (lockoutUntil: number) => void;
   resetPasswordResetOtpState: () => void;
+  clearPasswordResetFlow: () => void;
 }
 
 export interface RegisterData {

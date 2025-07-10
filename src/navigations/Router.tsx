@@ -14,14 +14,13 @@ import { RootStackParamList } from './types';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 const Router = () => {
-  const { 
-    isAuthenticated, 
-    userType, 
+  const {
+    isAuthenticated,
     isLoading: isAuthLoading,
-    token,
     pendingProfileCompletion,
     initializeAuth,
-    clearAuth
+    clearAuth,
+    isPasswordResetFlowActive,
   } = useAuthStore();
 
   const [isAppReady, setIsAppReady] = useState(false);
@@ -49,7 +48,15 @@ const Router = () => {
     );
   }
 
-  const shouldShowMainRouter = isAuthenticated || pendingProfileCompletion.isPending;
+  let contentComponent;
+
+  if (isAuthenticated || pendingProfileCompletion.isPending) {
+    contentComponent = MainRouter;
+  } else if (isPasswordResetFlowActive) {
+    contentComponent = AuthRouter;
+  } else {
+    contentComponent = AuthRouter;
+  }
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -57,19 +64,11 @@ const Router = () => {
         <RootStack.Navigator
           screenOptions={defaultScreenOptions}
         >
-          {!shouldShowMainRouter ? (
-            <RootStack.Screen
-              name={Routes.auth}
-              component={AuthRouter}
-              options={{ headerShown: false }}
-            />
-          ) : (
-            <RootStack.Screen
-              name={Routes.main}
-              component={MainRouter}
-              options={{ headerShown: false }}
-            />
-          )}
+          <RootStack.Screen
+            name={Routes.auth}
+            component={contentComponent}
+            options={{ headerShown: false }}
+          />
         </RootStack.Navigator>
       </NavigationContainer>
     </I18nextProvider>

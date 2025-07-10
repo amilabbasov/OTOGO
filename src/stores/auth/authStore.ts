@@ -13,16 +13,17 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   token: null,
   userType: null,
   pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
-  otpResendState: { 
-    resendAttempts: 0, 
-    lastResendTime: null, 
-    lockoutUntil: null, 
+  otpResendState: {
+    resendAttempts: 0,
+    lastResendTime: null,
+    lockoutUntil: null,
     isLockedOut: false,
     passwordResetResendAttempts: 0,
     passwordResetLastResendTime: null,
     passwordResetLockoutUntil: null,
     isPasswordResetLockedOut: false
   },
+  isPasswordResetFlowActive: false,
 
   setToken: async (token: string) => {
     try {
@@ -114,10 +115,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       token: null,
       userType: null,
       pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
-      otpResendState: { 
-        resendAttempts: 0, 
-        lastResendTime: null, 
-        lockoutUntil: null, 
+      otpResendState: {
+        resendAttempts: 0,
+        lastResendTime: null,
+        lockoutUntil: null,
         isLockedOut: false,
         passwordResetResendAttempts: 0,
         passwordResetLastResendTime: null,
@@ -145,7 +146,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       return;
     }
 
-    const hasBasicInfo = currentUserType === 'company_provider' 
+    const hasBasicInfo = currentUserType === 'company_provider'
       ? (user && user.companyName && user.phone)
       : (user && user.name && user.surname);
 
@@ -179,7 +180,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       // Bu, `completeProfile` API cavabından sonra `isPending` dəyərini düzgün təyin etməyə kömək edir.
       // For corporate providers, basic info is company name and phone
       // For other user types, basic info is name and surname
-      const hasBasicInfo = currentUserType === 'company_provider' 
+      const hasBasicInfo = currentUserType === 'company_provider'
         ? (apiUserData && apiUserData.companyName && apiUserData.phone)
         : (apiUserData && apiUserData.name && apiUserData.surname);
 
@@ -214,12 +215,12 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         url: error.config?.url,
         method: error.config?.method
       });
-      
+
       set({
         error: error.response?.data?.message || 'Profil məlumatlarını yükləmək mümkün olmadı.',
         isLoading: false
       });
-      
+
       if (error?.response?.status === 400) {
         const currentState = get();
         set({
@@ -422,7 +423,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   resendOtp: async (email: string, userType: UserType) => {
     const currentState = get();
     const { otpResendState } = currentState;
-    
+
     // Check if user is locked out for regular registration
     if (otpResendState.isLockedOut && otpResendState.lockoutUntil) {
       const now = Date.now();
@@ -462,10 +463,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         default:
           throw new Error('resendOtp: Yanlış istifadəçi növü seçilib, OTP yenidən göndərilə bilmədi.');
       }
-      
+
       // Increment resend attempts and update last resend time for regular registration
       get().incrementOtpResendAttempts();
-      
+
       set({ isLoading: false, error: null });
       return response.data;
     } catch (error: any) {
@@ -478,7 +479,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
   resendPasswordResetOtp: async (email: string) => {
     const currentState = get();
     const { otpResendState } = currentState;
-    
+
     // Check if user is locked out for password reset
     if (otpResendState.isPasswordResetLockedOut && otpResendState.passwordResetLockoutUntil) {
       const now = Date.now();
@@ -505,10 +506,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authService.resendPasswordResetOtp(email);
-      
+
       // Increment password reset resend attempts
       get().incrementPasswordResetOtpResendAttempts();
-      
+
       set({ isLoading: false, error: null });
       return response.data;
     } catch (error: any) {
@@ -522,10 +523,11 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authService.requestPasswordReset(email);
-      set({ 
-        isLoading: false, 
-        error: null, 
-        tempEmail: email
+      set({
+        isLoading: false,
+        error: null,
+        tempEmail: email,
+        isPasswordResetFlowActive: true
       });
       return response.data;
     } catch (error: any) {
@@ -533,6 +535,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
+  },
+
+  clearPasswordResetFlow: () => {
+    set({ isPasswordResetFlowActive: false });
   },
 
   verifyOtp: async (otpData: OtpVerificationData & { isPasswordReset?: boolean }) => {
@@ -617,10 +623,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
 
   completeProfile: async (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, taxId?: string) => {
     set({ isLoading: true, error: null });
-    
+
     // Ensure API client has proper authorization
     get().ensureApiClientAuth();
-    
+
     const currentState = get();
     const validation = get().validateProfileCompletionState();
     if (!validation.isValid) {
@@ -651,8 +657,8 @@ const useAuthStore = create<AuthStore>((set, get) => ({
           break;
         case 'company_provider':
           response = await authService.completeCompanyProviderProfile({
-            companyName: businessName || '', 
-            phone, 
+            companyName: businessName || '',
+            phone,
             description: `Company: ${businessName || ''}`,
             email: email
           });
@@ -662,7 +668,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       const apiUserData = response.data?.user || response.data;
-      
+
       // Check if profile is complete based on user type
       const hasRequiredPersonalInfo = userType === 'company_provider'
         ? (apiUserData && apiUserData.companyName && apiUserData.phone)
@@ -699,7 +705,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       return { success: true, data: response.data, nextStep };
     } catch (error: any) {
       if (error.response) {
-        
+
         if (error.response.data && typeof error.response.data === 'object') {
           for (const key in error.response.data) {
           }
@@ -749,10 +755,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     if (state.user) {
-      const hasBasicInfo = state.userType === 'company_provider' 
+      const hasBasicInfo = state.userType === 'company_provider'
         ? (state.user.companyName && state.user.phone)
         : (state.user.name && state.user.surname);
-      
+
       if (hasBasicInfo) {
         validationResult.warnings.push('User already has basic information - this might indicate the profile is complete enough to access the home screen');
       }
@@ -766,7 +772,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       await AsyncStorage.multiRemove(['userToken', 'userData']);
     } catch (error) {
     }
-    
+
     set({
       user: null,
       isAuthenticated: false,
@@ -776,10 +782,10 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       token: null,
       userType: null,
       pendingProfileCompletion: { isPending: false, userType: null, email: null, step: null },
-      otpResendState: { 
-        resendAttempts: 0, 
-        lastResendTime: null, 
-        lockoutUntil: null, 
+      otpResendState: {
+        resendAttempts: 0,
+        lastResendTime: null,
+        lockoutUntil: null,
         isLockedOut: false,
         passwordResetResendAttempts: 0,
         passwordResetLastResendTime: null,
@@ -787,15 +793,15 @@ const useAuthStore = create<AuthStore>((set, get) => ({
         isPasswordResetLockedOut: false
       },
     });
-    
+
     delete apiClient.defaults.headers.common['Authorization'];
   },
 
   resetOtpResendState: () => {
-    const newState = { 
-      resendAttempts: 0, 
-      lastResendTime: null, 
-      lockoutUntil: null, 
+    const newState = {
+      resendAttempts: 0,
+      lastResendTime: null,
+      lockoutUntil: null,
       isLockedOut: false,
       passwordResetResendAttempts: 0,
       passwordResetLastResendTime: null,
@@ -811,7 +817,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     const newAttempts = currentState.otpResendState.resendAttempts + 1;
     const isLockedOut = newAttempts >= 5;
     const lockoutUntil = isLockedOut ? Date.now() + (15 * 60 * 1000) : null;
-    
+
     const newState = {
       ...currentState.otpResendState,
       resendAttempts: newAttempts,
@@ -819,7 +825,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       lockoutUntil,
       isLockedOut
     };
-    
+
     set({ otpResendState: newState });
     get().saveOtpResendState(newState);
   },
@@ -840,7 +846,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     const newAttempts = currentState.otpResendState.passwordResetResendAttempts + 1;
     const isLockedOut = newAttempts >= 5;
     const lockoutUntil = isLockedOut ? Date.now() + (15 * 60 * 1000) : null;
-    
+
     const newState = {
       ...currentState.otpResendState,
       passwordResetResendAttempts: newAttempts,
@@ -848,7 +854,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
       passwordResetLockoutUntil: lockoutUntil,
       isPasswordResetLockedOut: isLockedOut
     };
-    
+
     set({ otpResendState: newState });
     get().saveOtpResendState(newState);
   },

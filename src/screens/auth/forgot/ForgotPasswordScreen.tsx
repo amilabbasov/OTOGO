@@ -28,7 +28,7 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
 
   const handleSendResetLink = async () => {
     setEmailError('');
-    
+
     if (!email.trim()) {
       setEmailError(t('Please enter your email address'));
       return;
@@ -41,13 +41,18 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
 
     try {
       await forgotPassword(email.trim());
-      
+
+      console.log('DEBUG: forgotPassword call SUCCEEDED in ForgotPasswordScreen.');
+
       Alert.alert(
-        t('Success'), 
+        t('Success'),
         t('Password reset code has been sent to your email.'),
-        [{ 
-          text: t('OK'), 
-          onPress: () => navigation.navigate(Routes.passwordResetOtp, { email: email.trim() })
+        [{
+          text: t('OK'),
+          onPress: () => {
+            console.log('DEBUG: Alert OK button pressed. Attempting navigation to PasswordResetOtp.');
+            navigation.navigate(Routes.passwordResetOtp, { email: email.trim() });
+          }
         }]
       );
     } catch (error: any) {
@@ -63,7 +68,7 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
@@ -71,20 +76,20 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <View style={styles.header}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => navigation.goBack()}
             >
-              <SvgImage 
-                source={require('../../../assets/svg/auth/goBack.svg')} 
-                width={40} 
-                height={40} 
+              <SvgImage
+                source={require('../../../assets/svg/auth/goBack.svg')}
+                width={40}
+                height={40}
               />
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
             <Text style={styles.title}>{t('Forgot Your Password?')}</Text>
-            
+
             <Text style={styles.subtitle}>
               {t('Please enter your email to send the OTP verification to reset your password')}
             </Text>
@@ -110,7 +115,7 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
               ) : null}
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.signInButton, isLoading && styles.signInButtonDisabled]}
               onPress={handleSendResetLink}
               disabled={isLoading}
@@ -124,7 +129,7 @@ const ForgotPasswordScreen = ({ navigation }: AuthScreenProps<Routes.forgotPassw
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.needHelpButton}
               onPress={handleNeedHelp}
             >

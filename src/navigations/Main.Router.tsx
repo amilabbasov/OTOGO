@@ -30,7 +30,6 @@ export const MainRouter = () => {
     return null;
   }
 
-  // If user is authenticated and has basic info, show main app directly
   if (isAuthenticated && !pendingProfileCompletion.isPending) {
     return <MainAppScreen />;
   }
@@ -47,14 +46,11 @@ export const MainRouter = () => {
             <UserTypeSelectionScreen
               onNext={(selectedUserType: string) => {
                 const userTypeMap: { [key: string]: UserType } = {
-                  'driver': 'driver',
-                  'individual_provider': 'individual_provider',
-                  'company_provider': 'company_provider'
+                  'driver': 'driver', 'individual_provider': 'individual_provider', 'company_provider': 'company_provider'
                 };
                 const mappedUserType = userTypeMap[selectedUserType] || 'driver';
                 setPendingProfileCompletionState({
-                  ...pendingProfileCompletion,
-                  userType: mappedUserType,
+                  ...pendingProfileCompletion, userType: mappedUserType,
                 });
               }}
             />
@@ -69,30 +65,17 @@ export const MainRouter = () => {
 
     if (isAuthenticated && token && user) {
       switch (pendingProfileCompletion.step) {
-        case 'personalInfo':
-          initialRouteName = Routes.personalInfo;
-          break;
-        case 'serviceSelection':
-          initialRouteName = Routes.serviceSelection;
-          break;
-        case 'products':
-          initialRouteName = Routes.products;
-          break;
-        case 'branches':
-          initialRouteName = Routes.branches;
-          break;
+        case 'personalInfo': initialRouteName = Routes.personalInfo; break;
+        case 'serviceSelection': initialRouteName = Routes.serviceSelection; break;
+        case 'products': initialRouteName = Routes.products; break;
+        case 'branches': initialRouteName = Routes.branches; break;
         default:
-          const hasBasicInfo = currentUserType === 'company_provider' 
+          const hasBasicInfo = currentUserType === 'company_provider'
             ? (user && user.companyName && user.phone)
             : (user && user.name && user.surname);
-
-          if (!hasBasicInfo) {
-            initialRouteName = Routes.personalInfo;
-          } else if (pendingProfileCompletion.userType === 'driver') {
-            initialRouteName = Routes.serviceSelection;
-          } else {
-            initialRouteName = Routes.products;
-          }
+          if (!hasBasicInfo) { initialRouteName = Routes.personalInfo; }
+          else if (pendingProfileCompletion.userType === 'driver') { initialRouteName = Routes.serviceSelection; }
+          else { initialRouteName = Routes.products; }
       }
     } else if (!isAuthenticated && pendingProfileCompletion.isPending) {
       initialRouteName = Routes.otp;
@@ -109,9 +92,7 @@ export const MainRouter = () => {
           name={Routes.serviceSelection}
           children={() => {
             const userType = pendingProfileCompletion.userType;
-            if (userType === 'driver') {
-              return <CarSelectionScreen />;
-            }
+            if (userType === 'driver') { return <CarSelectionScreen />; }
             return <SelectServicesScreen />;
           }}
         />
