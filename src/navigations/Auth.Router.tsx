@@ -38,6 +38,8 @@ export const AuthRouter = () => {
       <AuthStack.Screen name={Routes.forgotPassword} component={ForgotPasswordScreen} />
       <AuthStack.Screen name={Routes.passwordResetOtp} component={PasswordResetOtpScreen} />
       <AuthStack.Screen name={Routes.resetPassword} component={ResetPasswordScreen} />
+      <AuthStack.Screen name={Routes.onboardingPager} component={OnboardingPagerScreen} />
+      <AuthStack.Screen name={Routes.otp} component={OtpScreen} />
     </AuthStack.Navigator>
   );
 };
