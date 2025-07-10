@@ -566,18 +566,26 @@ const useAuthStore = create<AuthStore>()(
 
           if (isPasswordReset) {
             response = await authService.validatePasswordResetToken(email, token);
-            // Şifrə sıfırlama tokenini saxlayırıq
-            const actualPasswordResetToken = response.data?.passwordResetToken || response.data?.token || response.data?.access_token; // Server cavabından tokeni götür
+            const actualPasswordResetToken = response.data?.passwordResetToken || response.data?.token || response.data?.access_token;
             if (!actualPasswordResetToken) {
-                throw new Error('Şifrə sıfırlama tokeni cavabda tapılmadı.');
+              console.error('Şifrə sıfırlama tokeni cavabda tapılmadı:', response.data);
+              throw new Error('Şifrə sıfırlama tokeni cavabda tapılmadı.');
             }
+
+            console.log("verifyOtp (isPasswordReset): Setting state", {
+              isOtpVerifiedForPasswordReset: true,
+              isPasswordResetFlowActive: true,
+              passwordResetToken: actualPasswordResetToken,
+              currentEmail: email
+            });
 
             set({
               isLoading: false,
               error: null,
               isOtpVerifiedForPasswordReset: true,
               isPasswordResetFlowActive: true,
-              passwordResetToken: actualPasswordResetToken, // <<<<<< SAXLAYIRIQ
+              passwordResetToken: actualPasswordResetToken,
+              tempEmail: email,
             });
             return response.data;
           } else {
