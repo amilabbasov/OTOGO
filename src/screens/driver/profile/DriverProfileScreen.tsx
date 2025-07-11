@@ -136,15 +136,15 @@ const UserProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
   },
   profileInfo: {
     padding: 20,
     alignItems: 'center',
+    marginVertical: 60
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
     color: '#015656',
     marginBottom: 30,
     textAlign: 'center',
@@ -182,7 +182,6 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textAlign: 'center',
   },
-
   refreshButton: {
     backgroundColor: '#015656',
     borderRadius: 12,

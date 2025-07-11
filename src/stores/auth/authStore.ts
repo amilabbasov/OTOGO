@@ -409,6 +409,7 @@ const useAuthStore = create<AuthStore>()(
           }
 
           set((state) => ({
+            isLoading: false,
             pendingProfileCompletion: {
               ...state.pendingProfileCompletion,
               isPending: true,

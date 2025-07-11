@@ -40,7 +40,7 @@ const TabIcon: React.FC<TabIconProps> = ({ route, focused }) => {
       <Text
         style={[
           styles.label,
-          { color: focused ? '#D5FF5F' : '#fff' },
+          { color: focused ? '#D5FF5F' : '#FFFFFF' },
         ]}
       >
         {label}
@@ -54,13 +54,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 60,
-    flex: 1,
     height: '100%',
     marginTop: 35,
   },
   label: {
     fontSize: 10,
-    marginTop: 5,
+    marginTop: 4,
     textAlign: 'center',
   },
 });
