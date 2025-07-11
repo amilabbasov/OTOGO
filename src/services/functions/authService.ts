@@ -40,7 +40,7 @@ const authService = {
     return apiClient.post('/api/passwords/reset-request', { email });
   },
   resendPasswordResetOtp: (email: string) => apiClient.post('/api/passwords/auth/resend-code', { email }),
-  validatePasswordResetToken: (email: string, token: string) => apiClient.post('/api/passwords/validate-token', { email, token }),
+  validatePasswordResetToken: (email: string, token: string, refreshToken: string) => apiClient.post('/api/passwords/validate-token', { email, token, refreshToken }),
   updatePassword: (data: { email: string; token: string; newPassword: string; repeatPassword: string }) => apiClient.post('/api/passwords/update-password', data),
 
   // ===== SERVICES MANAGEMENT =====

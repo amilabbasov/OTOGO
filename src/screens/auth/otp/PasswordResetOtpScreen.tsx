@@ -36,6 +36,7 @@ const PasswordResetOtpScreen = ({ navigation }: AuthScreenProps<Routes.passwordR
     otpResendState,
     resetPasswordResetOtpState,
     clearPasswordResetFlow, 
+    passwordResetToken, 
   } = useAuthStore();
 
   const email = route.params?.email || tempEmail || '';
@@ -131,12 +132,24 @@ const PasswordResetOtpScreen = ({ navigation }: AuthScreenProps<Routes.passwordR
       return;
     }
 
+    console.log("handleVerify: Attempting to verify OTP for password reset.", { 
+      email, 
+      otpCode, 
+      isPasswordReset: true, 
+      refreshTokenFromStore: passwordResetToken 
+    });
+
     try {
-      await verifyOtp({ email, token: otpCode, isPasswordReset: true }); 
+      await verifyOtp({ 
+        email, 
+        token: otpCode, 
+        isPasswordReset: true,
+        refreshToken: passwordResetToken || '' 
+      });
       
       setTimeout(() => {
         Alert.alert(t('Success'), t('OTP verified successfully. You can now reset your password.'));
-        navigation.replace(Routes.resetPassword, { email, token: otpCode });
+        navigation.replace(Routes.resetPassword, { email, token: passwordResetToken || '' });
       }, 100);
       
     } catch (err: any) {

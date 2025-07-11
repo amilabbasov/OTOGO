@@ -111,4 +111,5 @@ export interface OtpVerificationData {
   token: string;
   userType?: UserType;
   isPasswordReset?: boolean;
+  refreshToken?: string;
 }

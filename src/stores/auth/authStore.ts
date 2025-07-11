@@ -474,9 +474,9 @@ const useAuthStore = create<AuthStore>()(
           return response.data;
         } catch (error: any) {
           console.error('resendOtp: API Response FAILED:', error.response?.data || error.message); // Debug log
-          
+
           let errorMessage = 'OTP-ni yenidən göndərmək mümkün olmadı.';
-          
+
           if (error.response?.status === 403) {
             errorMessage = 'OTP yenidən göndərmə cəhdi bloklanıb. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin.';
           } else if (error.response?.status === 429) {
@@ -486,7 +486,7 @@ const useAuthStore = create<AuthStore>()(
           } else if (error.message) {
             errorMessage = error.message;
           }
-          
+
           set({ error: errorMessage, isLoading: false });
           throw error;
         }
@@ -526,7 +526,7 @@ const useAuthStore = create<AuthStore>()(
           return response.data;
         } catch (error: any) {
           let errorMessage = 'OTP kodu yenidən göndərilərkən səhv baş verdi.';
-          
+
           if (error.response?.status === 403) {
             errorMessage = 'OTP yenidən göndərmə cəhdi bloklanıb. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin.';
           } else if (error.response?.status === 429) {
@@ -536,7 +536,7 @@ const useAuthStore = create<AuthStore>()(
           } else if (error.message) {
             errorMessage = error.message;
           }
-          
+
           set({ error: errorMessage, isLoading: false });
           throw error;
         }
@@ -588,11 +588,16 @@ const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         try {
           let response;
-          const { userType, token, email, isPasswordReset } = otpData;
+          // BURADA DƏYİŞİKLİK: refreshToken-ı otpData-dan çıxarın
+          const { userType, token, email, isPasswordReset, refreshToken } = otpData;
 
           if (isPasswordReset) {
-            response = await authService.validatePasswordResetToken(email, token);
-            const actualPasswordResetToken = response.data?.passwordResetToken || response.data?.token || response.data?.access_token;
+            // BURADA DƏYİŞİKLİK: refreshToken-ı API çağırışına ötürün
+            response = await authService.validatePasswordResetToken(email, token, refreshToken || ''); // refreshToken yoxdursa boş string ötürün
+
+            // actualPasswordResetToken təyinatı əvvəlki kimi qalır
+            const actualPasswordResetToken = response.data?.refreshToken || response.data?.passwordResetToken || response.data?.token || response.data?.access_token;
+
             if (!actualPasswordResetToken) {
               console.error('Şifrə sıfırlama tokeni cavabda tapılmadı:', response.data);
               throw new Error('Şifrə sıfırlama tokeni cavabda tapılmadı.');
@@ -615,6 +620,7 @@ const useAuthStore = create<AuthStore>()(
             });
             return response.data;
           } else {
+            // ... (qeydiyyat/login axını üçün verifyOtp-nin qalan hissəsi)
             switch (userType) {
               case 'driver':
                 response = await authService.verifyDriver({ email, token, userType });
@@ -652,7 +658,7 @@ const useAuthStore = create<AuthStore>()(
               tempEmail: null,
               isPasswordResetFlowActive: false,
               isOtpVerifiedForPasswordReset: false,
-              passwordResetToken: null, // Qeydiyyat/login axını üçün sıfırla
+              passwordResetToken: null,
               pendingProfileCompletion: {
                 isPending: true,
                 userType: userType as UserType,
