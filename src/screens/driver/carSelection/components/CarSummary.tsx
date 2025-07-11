@@ -1,15 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { SvgImage } from '../../../../components/svgImage/SvgImage';
+import { CarBrand } from '../../../../services/functions/carService';
 
 interface CarSummaryProps {
   form: {
     name: string;
     year: string;
-    brand: string;
+    brand: number;
     model: string;
   };
-  selectedBrand: any;
+  selectedBrand: CarBrand | undefined;
   onEdit: () => void;
 }
 
@@ -28,7 +29,7 @@ const CarSummary: React.FC<CarSummaryProps> = ({ form, selectedBrand, onEdit }) 
           </TouchableOpacity>
         </View>
         <Text style={styles.summaryDesc}>
-          {selectedBrand?.label || ''}{form.brand ? ', ' : ''}{form.model}
+          {selectedBrand?.name || ''}{form.brand ? ', ' : ''}{form.model}
         </Text>
       </View>
     </View>

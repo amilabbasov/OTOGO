@@ -19,6 +19,7 @@ import type { AuthScreenProps } from '../../../navigations/types';
 import { Routes } from '../../../navigations/routes';
 import useAuthStore from '../../../stores/auth/authStore';
 import { UserType } from '../../../types/common';
+import SuccessModal from '../../../components/success/SuccessModal';
 
 const OTP_LENGTH = 6;
 const RESEND_TIME = 10;
@@ -56,6 +57,7 @@ const OtpScreen = () => {
   const [otpError, setOtpError] = useState('');
   const [lockoutTimer, setLockoutTimer] = useState<number | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Check lockout status on component mount
   useEffect(() => {
@@ -160,6 +162,7 @@ const OtpScreen = () => {
     try {
       if (userType) {
         await verifyOtp({ email, token: otpCode, userType: userType as UserType });
+        setShowSuccess(true);
       } else {
         setOtpError(t('An error occurred. Please try again. Missing user type.'));
       }
@@ -299,6 +302,15 @@ const OtpScreen = () => {
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
+          <SuccessModal
+            visible={showSuccess}
+            message={t('Number verification success!!')}
+            svgSource={require('../../../assets/svg/success/verification-success.svg')}
+            onHide={() => {
+              setShowSuccess(false);
+              navigation.reset({ index: 0, routes: [{ name: Routes.driverHome as never }] });
+            }}
+          />
         </View>
       </TouchableWithoutFeedback>
     </SafeAreaView>

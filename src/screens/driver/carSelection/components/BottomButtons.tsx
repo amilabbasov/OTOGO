@@ -6,11 +6,22 @@ interface BottomButtonsProps {
   onSkip: () => void;
   onContinue: () => void;
   continueDisabled?: boolean;
+  showForm: boolean;
 }
 
-const BottomButtons: React.FC<BottomButtonsProps> = ({ carsCount, onSkip, onContinue, continueDisabled = false }) => {
+const BottomButtons: React.FC<BottomButtonsProps> = ({ carsCount, onSkip, onContinue, continueDisabled = false, showForm }) => {
   const isDisabled = carsCount === 0 || continueDisabled;
-  
+
+  if (!showForm && carsCount === 0) {
+    return (
+      <View style={styles.bottomRow}>
+        <TouchableOpacity style={styles.skipBtn} onPress={onSkip}>
+          <Text style={styles.skipBtnText}>Skip</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.bottomRow}>
       <TouchableOpacity style={styles.skipBtn} onPress={onSkip}>

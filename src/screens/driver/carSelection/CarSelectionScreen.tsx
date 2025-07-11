@@ -18,26 +18,16 @@ import CarForm from './components/CarForm';
 import CarSummary from './components/CarSummary';
 import SelectionModal from './components/SelectionModal';
 import BottomButtons from './components/BottomButtons';
-
-// Mock data for brands and models
-const CAR_BRANDS = [
-  { label: 'Porsche', value: 'porsche', models: ['Panamera', 'Cayenne', '911'] },
-  { label: 'BMW', value: 'bmw', models: ['X5', 'X6', 'M3'] },
-  { label: 'Mercedes', value: 'mercedes', models: ['E-Class', 'S-Class', 'GLA'] },
-  { label: 'Audi', value: 'audi', models: ['A4', 'A6', 'Q5', 'Q7'] },
-  { label: 'Toyota', value: 'toyota', models: ['Camry', 'Corolla', 'RAV4', 'Highlander'] },
-  { label: 'Honda', value: 'honda', models: ['Civic', 'Accord', 'CR-V', 'Pilot'] },
-  { label: 'Ford', value: 'ford', models: ['Focus', 'Fusion', 'Escape', 'Explorer'] },
-  { label: 'Chevrolet', value: 'chevrolet', models: ['Cruze', 'Malibu', 'Equinox', 'Tahoe'] },
-  { label: 'Volkswagen', value: 'volkswagen', models: ['Golf', 'Passat', 'Tiguan', 'Atlas'] },
-  { label: 'Hyundai', value: 'hyundai', models: ['Elantra', 'Sonata', 'Tucson', 'Santa Fe'] },
-];
+import carService, { CarModel, CarBrand } from '../../../services/functions/carService';
+import SuccessModal from '../../../components/success/SuccessModal';
+const allSetSuccessSvg = require('../../../assets/svg/success/allSet-success.svg');
+import { CommonActions } from '@react-navigation/native';
 
 const MAX_CARS = 2;
 
 const CarSelectionScreen = () => {
   const navigation = useNavigation();
-  const { pendingProfileCompletion } = useAuthStore();
+  const { pendingProfileCompletion, setPendingProfileCompletionState } = useAuthStore();
   const firstName = pendingProfileCompletion.firstName || 'Driver';
   const [cars, setCars] = useState<any[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -48,19 +38,64 @@ const CarSelectionScreen = () => {
   const [form, setForm] = useState({
     name: '',
     year: '',
-    brand: '',
+    brand: 0, // use id instead of string
     model: '',
   });
+  const [brandModels, setBrandModels] = useState<CarModel[]>([]);
+  const [brandModelsLoading, setBrandModelsLoading] = useState(false);
+  const [brandModelsError, setBrandModelsError] = useState<string | null>(null);
+  const [brands, setBrands] = useState<CarBrand[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(false);
+  const [brandsError, setBrandsError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(300)).current;
 
-  const selectedBrand = CAR_BRANDS.find(b => b.value === form.brand);
-  const availableModels = selectedBrand ? selectedBrand.models : [];
+  const selectedBrand = brands.find(b => b.id === form.brand);
+
+  useEffect(() => {
+    // Fetch brands
+    setBrandsLoading(true);
+    carService.getBrands()
+      .then(setBrands)
+      .catch((err) => {
+        setBrandsError('Failed to load car brands');
+      })
+      .finally(() => setBrandsLoading(false));
+
+    // Remove global models fetch
+    // setModelsLoading(true);
+    // carService.getModels()
+    //   .then(setModels)
+    //   .catch((err) => {
+    //     setModelsError('Failed to load car models');
+    //   })
+    //   .finally(() => setModelsLoading(false));
+  }, []);
+
+  // Fetch models when brand changes
+  useEffect(() => {
+    if (form.brand) {
+      setBrandModelsLoading(true);
+      setBrandModelsError(null);
+      carService.getModelsByBrand(form.brand)
+        .then(setBrandModels)
+        .catch((err) => {
+          setBrandModelsError('Failed to load car models for this brand');
+        })
+        .finally(() => setBrandModelsLoading(false));
+    } else {
+      setBrandModels([]);
+    }
+  }, [form.brand]);
+
+  // Filter models by selected brand - now use brandModels directly
+  const availableModels = brandModels.map((m) => m.name);
 
   // Filter brands based on search query
-  const filteredBrands = CAR_BRANDS.filter(brand =>
-    brand.label.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBrands = brands.filter(brand =>
+    brand.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Filter models based on search query
@@ -68,7 +103,7 @@ const CarSelectionScreen = () => {
     model.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const resetForm = () => setForm({ name: '', year: '', brand: '', model: '' });
+  const resetForm = () => setForm({ name: '', year: '', brand: 0, model: '' });
 
   const isFormComplete = () => {
     return form.name && form.year && form.brand && form.model;
@@ -115,17 +150,54 @@ const CarSelectionScreen = () => {
   };
 
   const handleSkip = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: Routes.driverHome as never }],
-    });
+    setShowSuccessModal(true);
+    setTimeout(() => {
+      setShowSuccessModal(false);
+      setPendingProfileCompletionState({
+        ...pendingProfileCompletion,
+        isPending: false,
+      });
+    }, 1500);
   };
 
-  const handleContinue = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: Routes.driverHome as never }],
-    });
+  const handleContinue = async () => {
+    if (cars.length === 0) {
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        setPendingProfileCompletionState({
+          ...pendingProfileCompletion,
+          isPending: false,
+        });
+      }, 1500);
+      return;
+    }
+    try {
+      for (const car of cars) {
+        const models: CarModel[] = await carService.getModelsByBrand(car.brand);
+        const modelObj = models.find(m => m.name === car.model);
+        if (!modelObj) {
+          Alert.alert('Error', `Model '${car.model}' not found for selected brand.`);
+          return;
+        }
+        await carService.postCar({
+          name: car.name,
+          brandId: car.brand,
+          modelId: modelObj.id,
+          year: Number(car.year),
+        });
+      }
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        setPendingProfileCompletionState({
+          ...pendingProfileCompletion,
+          isPending: false,
+        });
+      }, 1500);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to save car(s)');
+    }
   };
 
   const handleBack = () => {
@@ -197,8 +269,8 @@ const CarSelectionScreen = () => {
     });
   };
 
-  const selectBrand = (brand: typeof CAR_BRANDS[0]) => {
-    setForm(f => ({ ...f, brand: brand.value, model: '' }));
+  const selectBrand = (brand: CarBrand) => {
+    setForm(f => ({ ...f, brand: brand.id, model: '' }));
     closeModal();
   };
 
@@ -209,6 +281,12 @@ const CarSelectionScreen = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
+      <SuccessModal
+        visible={showSuccessModal}
+        message="All ready set!"
+        onHide={() => setShowSuccessModal(false)}
+        svgSource={allSetSuccessSvg}
+      />
       <View style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -225,7 +303,7 @@ const CarSelectionScreen = () => {
           {cars.length > 0 && (
             <View style={{ marginBottom: 16 }}>
               {cars.map((car, index) => {
-                const carBrand = CAR_BRANDS.find(b => b.value === car.brand);
+                const carBrand = brands.find(b => b.id === car.brand);
                 return (
                   <CarSummary
                     key={index}
@@ -247,7 +325,14 @@ const CarSelectionScreen = () => {
                 selectedBrand={selectedBrand}
                 onOpenBrandModal={openBrandModal}
                 onOpenModelModal={openModelModal}
-                onRemove={() => editingIndex !== null && handleRemove(editingIndex)}
+                onRemove={() => {
+                  if (editingIndex !== null) {
+                    handleRemove(editingIndex);
+                  } else {
+                    resetForm();
+                    setShowForm(false);
+                  }
+                }}
               />
               <TouchableOpacity
                 style={[styles.addCarBtn, !isFormComplete() && { opacity: 0.5 }]}
@@ -271,7 +356,8 @@ const CarSelectionScreen = () => {
           carsCount={cars.length}
           onSkip={handleSkip}
           onContinue={handleContinue}
-          continueDisabled={showForm && !isFormComplete()}
+          continueDisabled={!(cars.length > 0 || (showForm && isFormComplete()))}
+          showForm={showForm}
         />
       </View>
 

@@ -10,15 +10,16 @@ import {
   Animated,
   StyleSheet,
 } from 'react-native';
+import { CarBrand } from '../../../../services/functions/carService';
 
 interface SelectionModalProps {
   visible: boolean;
   modalType: 'brand' | 'model';
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  filteredBrands: any[];
+  filteredBrands: CarBrand[];
   filteredModels: string[];
-  onSelectBrand: (brand: any) => void;
+  onSelectBrand: (brand: CarBrand) => void;
   onSelectModel: (model: string) => void;
   onClose: () => void;
   fadeAnim: Animated.Value;
@@ -38,13 +39,13 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
   fadeAnim,
   slideAnim,
 }) => {
-  const renderBrandItem = ({ item }: { item: any }) => (
+  const renderBrandItem = ({ item }: { item: CarBrand }) => (
     <TouchableOpacity
       style={styles.modalItem}
       onPress={() => onSelectBrand(item)}
       activeOpacity={0.7}
     >
-      <Text style={styles.itemLabel}>{item.label}</Text>
+      <Text style={styles.itemLabel}>{item.name}</Text>
     </TouchableOpacity>
   );
 
@@ -92,7 +93,7 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
                 <FlatList
                   data={filteredBrands}
                   renderItem={renderBrandItem}
-                  keyExtractor={item => item.value}
+                  keyExtractor={item => item.id.toString()}
                   style={styles.modalList}
                   showsVerticalScrollIndicator={false}
                   ListEmptyComponent={

@@ -14,7 +14,6 @@ const authService = {
     apiClient.post('/api/drivers/complete-registration', data),
   resendDriverOtp: (email: string) => {
     console.log("authService.resendDriverOtp: Making API call to /api/drivers/auth/resend-code with email:", email);
-    // YALNIZ email gondərilir!
     const payload = { email };
     console.log("authService.resendDriverOtp: Request payload:", payload);
     return apiClient.post('/api/drivers/auth/resend-code', payload);

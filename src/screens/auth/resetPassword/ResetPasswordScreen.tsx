@@ -21,6 +21,7 @@ import { Routes } from '../../../navigations/routes';
 import useAuthStore from '../../../stores/auth/authStore';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import { colors } from '../../../theme/color';
+import SuccessModal from '../../../components/success/SuccessModal';
 
 const ResetPasswordScreen = () => {
   const { t } = useTranslation();
@@ -39,6 +40,7 @@ const ResetPasswordScreen = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     console.log('ResetPasswordScreen useEffect check:', { currentEmail, currentToken, isOtpVerifiedForPasswordReset });
@@ -92,19 +94,7 @@ const ResetPasswordScreen = () => {
     
     try {
       await updatePassword({ email: currentEmail, token: currentToken, newPassword, repeatPassword: confirmPassword }); // <<<< currentToken istifadə edirik
-      Alert.alert(
-        t('Success'),
-        t('Password has been reset successfully'),
-        [
-          {
-            text: t('OK'),
-            onPress: () => {
-              clearPasswordResetFlow();
-              navigation.navigate(Routes.login);
-            }
-          },
-        ]
-      );
+      setShowSuccess(true);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || t('Failed to reset password. Please try again.');
       Alert.alert(t('Error'), errorMessage);
@@ -237,6 +227,17 @@ const ResetPasswordScreen = () => {
               </Text>
             </TouchableOpacity>
           </View>
+          <SuccessModal
+            visible={showSuccess}
+            message={t('Reset Password Success')}
+            subMessage={t('Please re-login with your new password')}
+            svgSource={require('../../../assets/svg/success/reset-success.svg')}
+            onHide={() => {
+              setShowSuccess(false);
+              clearPasswordResetFlow();
+              navigation.navigate(Routes.login);
+            }}
+          />
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </SafeAreaView>

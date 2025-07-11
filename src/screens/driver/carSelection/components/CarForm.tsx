@@ -6,7 +6,7 @@ interface CarFormProps {
   form: {
     name: string;
     year: string;
-    brand: string;
+    brand: number;
     model: string;
   };
   setForm: (form: any) => void;
@@ -48,7 +48,7 @@ const CarForm: React.FC<CarFormProps> = ({
           <SvgImage source={require('../../../../assets/svg/personalInfo/car.svg')} width={20} height={20} />
         )}
         <Text style={styles.selectText}>
-          {selectedBrand ? selectedBrand.label : 'Select brand'}
+          {selectedBrand ? selectedBrand.name : 'Select brand'}
         </Text>
       </TouchableOpacity>
       <Text style={styles.label}>Car model</Text>
