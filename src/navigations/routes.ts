@@ -38,5 +38,5 @@ export enum Routes {
     // Tab navigators
     driverTabs = 'driverTabs',
     providerTabs = 'providerTabs',
-    selectedCarSummary = 'selectedCarSummary',
+  
 }

@@ -96,7 +96,6 @@ export const MainRouter = () => {
             return <SelectServicesScreen />;
           }}
         />
-        <MainStack.Screen name={Routes.selectedCarSummary} component={require('../screens/driver/carSelection/SelectedCarSummaryScreen').default} />
         <MainStack.Screen name={Routes.products} component={ProductsScreen} />
         <MainStack.Screen name={Routes.branches} component={BranchesScreen} />
       </MainStack.Navigator>
