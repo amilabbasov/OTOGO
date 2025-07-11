@@ -115,11 +115,28 @@ const CarSelectionScreen = () => {
   };
 
   const handleSkip = () => {
-    navigation.navigate(Routes.driverHome as never);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: Routes.driverHome as never }],
+    });
   };
 
   const handleContinue = () => {
-    navigation.navigate(Routes.driverHome as never);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: Routes.driverHome as never }],
+    });
+  };
+
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: Routes.driverHome as never }],
+      });
+    }
   };
 
   const openBrandModal = () => {
@@ -198,7 +215,7 @@ const CarSelectionScreen = () => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <SvgImage source={require('../../../assets/svg/auth/goBack.svg')} width={40} height={40} />
           </TouchableOpacity>
           <Text style={styles.hello}>Hello, {firstName}</Text>
