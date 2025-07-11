@@ -17,20 +17,22 @@ const SoleProviderNavigator = () => {
         tabBarIcon: ({ focused, color, size }) => (
           <TabIcon route={route.name} focused={focused} />
         ),
-        tabBarActiveTintColor: '#36F88D',
-        tabBarInactiveTintColor: '#B3B3B3',
-        tabBarShowLabel: true,
+        tabBarShowLabel: false,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: '#181818',
           borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
+          borderRadius: 40,
+          marginHorizontal: 16,
+          marginBottom: 16,
           height: 80,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginTop: 4,
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          elevation: 10,
         },
       })}
     >

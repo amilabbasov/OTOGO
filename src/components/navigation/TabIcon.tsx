@@ -1,5 +1,27 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { SvgImage } from '../svgImage/SvgImage';
+
+const ICONS = {
+  home: {
+    default: require('../../assets/svg/tabs/home.svg'),
+    selected: require('../../assets/svg/tabs/home-selected.svg'),
+  },
+  search: {
+    default: require('../../assets/svg/tabs/search.svg'),
+    selected: require('../../assets/svg/tabs/search-selected.svg'),
+  },
+  profile: {
+    default: require('../../assets/svg/tabs/profile.svg'),
+    selected: require('../../assets/svg/tabs/profile-selected.svg'),
+  },
+};
+
+const LABELS: Record<string, string> = {
+  home: 'Home',
+  search: 'Search',
+  profile: 'Profile',
+};
 
 interface TabIconProps {
   route: string;
@@ -7,52 +29,21 @@ interface TabIconProps {
 }
 
 const TabIcon: React.FC<TabIconProps> = ({ route, focused }) => {
-  const getIconText = () => {
-    switch (route) {
-      // Driver tabs
-      case 'driverHome':
-        return '🏠';
-      case 'driverServices':
-        return '🔍';
-      case 'driverBookings':
-        return '📅';
-      case 'driverProfile':
-        return '👤';
-      
-      // Provider tabs
-      case 'providerHome':
-        return '🏠';
-      case 'providerServices':
-        return '🔧';
-      case 'providerBookings':
-        return '📅';
-      case 'providerEarnings':
-        return '💰';
-      case 'providerProfile':
-        return '👤';
-      
-      // Legacy support (if any old route names are still used)
-      case 'Home':
-        return '🏠';
-      case 'Services':
-        return '🔍';
-      case 'Bookings':
-        return '📅';
-      case 'Profile':
-        return '👤';
-      case 'Earnings':
-        return '💰';
-      
-      default:
-        console.warn('Unknown route for tab icon:', route);
-        return '📱';
-    }
-  };
-
+  const key = route.toLowerCase();
+  const iconSet = ICONS[key as keyof typeof ICONS];
+  const label = LABELS[key];
+  if (!iconSet || !label) return null;
+  const iconSource = focused && iconSet.selected ? iconSet.selected : iconSet.default;
   return (
-    <View style={[styles.container, focused && styles.focused]}>
-      <Text style={[styles.icon, focused && styles.focusedText]}>
-        {getIconText()}
+    <View style={styles.container}>
+      <SvgImage source={iconSource} width={24} height={24} />
+      <Text
+        style={[
+          styles.label,
+          { color: focused ? '#D5FF5F' : '#fff' },
+        ]}
+      >
+        {label}
       </Text>
     </View>
   );
@@ -62,15 +53,15 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 60,
+    flex: 1,
+    height: '100%',
+    marginTop: 35,
   },
-  focused: {
-    // Add focused styles if needed
-  },
-  icon: {
-    fontSize: 20,
-  },
-  focusedText: {
-    // Add focused text styles if needed
+  label: {
+    fontSize: 10,
+    marginTop: 5,
+    textAlign: 'center',
   },
 });
 

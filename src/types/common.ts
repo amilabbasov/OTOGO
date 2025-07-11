@@ -34,6 +34,7 @@ export interface User {
   birthday?: string;
   companyName?: string;
   description?: string;
+  isVerified?: boolean;
 }
 
 export interface Service {
@@ -101,6 +102,7 @@ export interface RegisterData {
   repeatPassword: string;
   userType: UserType;
   selectedServices?: string[];
+  isVerified?: boolean;
 }
 
 export interface OtpVerificationData {

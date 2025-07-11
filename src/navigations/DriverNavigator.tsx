@@ -5,7 +5,6 @@ import TabIcon from '../components/navigation/TabIcon';
 import DriverHomeScreen from '../screens/driver/home/UserHomeScreen';
 import DriverProfileScreen from '../screens/driver/profile/DriverProfileScreen';
 import DriverServicesScreen from '../screens/driver/services/UserServicesScreen';
-import DriverBookingsScreen from '../screens/driver/bookings/UserBookingsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -20,15 +19,25 @@ const DriverNavigator = () => {
         tabBarIcon: ({ focused, color: _color, size: _size }) => (
           <TabBarIcon route={route.name} focused={focused} />
         ),
-        tabBarActiveTintColor: '#015656',
-        tabBarInactiveTintColor: '#6B7280',
+        tabBarShowLabel: false,
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#181818',
+          borderRadius: 40,
+          marginHorizontal: 16,
+          marginBottom: 35,
+          height: 80,
+          position: 'absolute',
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          elevation: 10,
+        },
       })}
     >
-      <Tab.Screen name="Home" component={DriverHomeScreen} />
-      <Tab.Screen name="Services" component={DriverServicesScreen} />
-      <Tab.Screen name="Bookings" component={DriverBookingsScreen} />
-      <Tab.Screen name="Profile" component={DriverProfileScreen} />
+      <Tab.Screen name="home" component={DriverHomeScreen} />
+      <Tab.Screen name="search" component={DriverServicesScreen} />
+      <Tab.Screen name="profile" component={DriverProfileScreen} />
     </Tab.Navigator>
   );
 };

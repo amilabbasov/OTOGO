@@ -390,19 +390,19 @@ const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         try {
           let response;
-          const { userType, email, password, repeatPassword, selectedServices } = userData;
+          const { userType, email, password, repeatPassword, selectedServices, isVerified } = userData;
 
           set({ tempEmail: email, userType: userType });
 
           switch (userType) {
             case 'driver':
-              response = await authService.registerDriver({ email, password, repeatPassword, userType });
+              response = await authService.registerDriver({ email, password, repeatPassword, userType, isVerified });
               break;
             case 'company_provider':
-              response = await authService.registerCompanyProvider({ email, password, repeatPassword, selectedServices, userType });
+              response = await authService.registerCompanyProvider({ email, password, repeatPassword, selectedServices, userType, isVerified });
               break;
             case 'individual_provider':
-              response = await authService.registerIndividualProvider({ email, password, repeatPassword, selectedServices, userType });
+              response = await authService.registerIndividualProvider({ email, password, repeatPassword, selectedServices, userType, isVerified });
               break;
             default:
               throw new Error('register: Yanlış istifadəçi növü seçilib.');
