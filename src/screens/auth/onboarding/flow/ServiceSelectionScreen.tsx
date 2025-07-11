@@ -46,12 +46,10 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext, userType })
     }
 
     try {
-      // If this is a provider (not during registration), update services via API
       if (userType && (userType === 'individual_provider' || userType === 'company_provider')) {
         await updateServices(selected, userType);
       }
       
-      // Convert service IDs to service names for backward compatibility
       const selectedServiceNames = services
         .filter(service => selected.includes(service.id))
         .map(service => service.serviceName);
@@ -59,7 +57,6 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ onNext, userType })
       onNext(selectedServiceNames);
     } catch (error) {
       console.error('Error updating services:', error);
-      // Still proceed with the flow even if API call fails
       const selectedServiceNames = services
         .filter(service => selected.includes(service.id))
         .map(service => service.serviceName);
