@@ -1,8 +1,5 @@
-// src/types/common.ts
-
 export type UserType = 'driver' | 'individual_provider' | 'company_provider';
 
-// Login Credentials interfeysi əlavə edildi
 export interface LoginCredentials {
   email: string;
   password: string;
