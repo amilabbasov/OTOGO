@@ -139,8 +139,21 @@ const OtpScreen = () => {
         setTimer(RESEND_TIME);
         Alert.alert(t('Success'), t('OTP code resent successfully'));
       } catch (err: any) {
-        const displayError = authStoreError || t('Failed to resend OTP code. Please try again.');
-        setOtpError(displayError);
+        const errorMessage = err.message || authStoreError || t('Failed to resend OTP code. Please try again.');
+        setOtpError(errorMessage);
+        
+        if (errorMessage.includes('artıq təsdiqlənib') || errorMessage.includes('already verified')) {
+          Alert.alert(
+            t('Account Already Verified'),
+            t('This account is already verified. You will be redirected to the login page.'),
+            [
+              {
+                text: t('OK'),
+                onPress: () => navigation.navigate(Routes.login)
+              }
+            ]
+          );
+        }
       }
     }
   };
@@ -308,7 +321,7 @@ const OtpScreen = () => {
             svgSource={require('../../../assets/svg/success/verification-success.svg')}
             onHide={() => {
               setShowSuccess(false);
-              navigation.reset({ index: 0, routes: [{ name: Routes.driverHome as never }] });
+              navigation.reset({ index: 0, routes: [{ name: Routes.driverTabs as never }] });
             }}
           />
         </View>

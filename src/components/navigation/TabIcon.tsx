@@ -15,12 +15,51 @@ const ICONS = {
     default: require('../../assets/svg/tabs/profile.svg'),
     selected: require('../../assets/svg/tabs/profile-selected.svg'),
   },
+  // Driver routes
+  driverhome: {
+    default: require('../../assets/svg/tabs/home.svg'),
+    selected: require('../../assets/svg/tabs/home-selected.svg'),
+  },
+  driverservices: {
+    default: require('../../assets/svg/tabs/search.svg'),
+    selected: require('../../assets/svg/tabs/search-selected.svg'),
+  },
+  driverprofile: {
+    default: require('../../assets/svg/tabs/profile.svg'),
+    selected: require('../../assets/svg/tabs/profile-selected.svg'),
+  },
+  // Provider routes
+  providerhome: {
+    default: require('../../assets/svg/tabs/home.svg'),
+    selected: require('../../assets/svg/tabs/home-selected.svg'),
+  },
+  providerbookings: {
+    default: require('../../assets/svg/tabs/search.svg'),
+    selected: require('../../assets/svg/tabs/search-selected.svg'),
+  },
+  providerearnings: {
+    default: require('../../assets/svg/tabs/profile.svg'),
+    selected: require('../../assets/svg/tabs/profile-selected.svg'),
+  },
+  providerprofile: {
+    default: require('../../assets/svg/tabs/profile.svg'),
+    selected: require('../../assets/svg/tabs/profile-selected.svg'),
+  },
 };
 
 const LABELS: Record<string, string> = {
   home: 'Home',
   search: 'Search',
   profile: 'Profile',
+  // Driver routes
+  driverhome: 'Home',
+  driverservices: 'Search',
+  driverprofile: 'Profile',
+  // Provider routes
+  providerhome: 'Home',
+  providerbookings: 'Bookings',
+  providerearnings: 'Earnings',
+  providerprofile: 'Profile',
 };
 
 interface TabIconProps {

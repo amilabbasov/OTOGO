@@ -29,7 +29,8 @@ const CarSummary: React.FC<CarSummaryProps> = ({ form, selectedBrand, onEdit }) 
           </TouchableOpacity>
         </View>
         <Text style={styles.summaryDesc}>
-          {selectedBrand?.name || ''}{form.brand ? ', ' : ''}{form.model}
+          {selectedBrand?.name && form.model ? `${selectedBrand.name}, ${form.model}` : 
+           selectedBrand?.name || form.model || ''}
         </Text>
       </View>
     </View>

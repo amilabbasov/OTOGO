@@ -40,7 +40,7 @@ const Router = () => {
     return () => subscription.remove();
   }, [clearAuth]);
 
-  if (!isAppReady || isAuthLoading) {
+  if (!isAppReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />

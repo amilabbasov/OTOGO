@@ -68,8 +68,22 @@ const LoginScreen: React.FC<LoginScreenProps> = () => {
   }, [clearError]);
 
   useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      clearError();
+    });
+    return unsubscribe;
+  }, [navigation, clearError]);
+
+  useEffect(() => {
     if (error) {
       setFieldErrors({ general: error });
+      
+      // Auto-hide error after 5 seconds
+      const timer = setTimeout(() => {
+        setFieldErrors({});
+      }, 5000);
+      
+      return () => clearTimeout(timer);
     } else {
       setFieldErrors({});
     }

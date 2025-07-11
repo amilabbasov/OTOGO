@@ -31,7 +31,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const { userType } = route.params as { userType: UserType }; 
   const { selectedServices = [] } = route.params as { selectedServices?: string[] };
   
-  const { register, isLoading, error: authStoreError } = useAuthStore(); 
+  const { register, isLoading, error: authStoreError, clearError } = useAuthStore(); 
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,6 +46,19 @@ const RegisterScreen: React.FC<RegisterScreenProps> = () => {
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
   const rePasswordInputRef = useRef<TextInput>(null);
+
+  // Clear error when component mounts
+  React.useEffect(() => {
+    clearError();
+  }, [clearError]);
+
+  // Clear error when navigating away
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      clearError();
+    });
+    return unsubscribe;
+  }, [navigation, clearError]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

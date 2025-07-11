@@ -137,6 +137,13 @@ const useAuthStore = create<AuthStore>()(
         set({ error: null });
       },
 
+      setErrorWithAutoClear: (errorMessage: string, timeoutMs: number = 5000) => {
+        set({ error: errorMessage });
+        setTimeout(() => {
+          set({ error: null });
+        }, timeoutMs);
+      },
+
       fetchUserInformation: async (forceRefresh = false) => {
         const { token, userType: currentUserType, user, pendingProfileCompletion } = get();
 
@@ -285,6 +292,9 @@ const useAuthStore = create<AuthStore>()(
             userType: null,
             pendingProfileCompletion: initialPendingProfileCompletionState,
           });
+          
+          // Set error with auto-clear
+          get().setErrorWithAutoClear(errorMessage, 5000);
           throw error;
         }
       },

@@ -77,6 +77,7 @@ export interface AuthActions {
   completeProfile: (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, taxId?: string) => Promise<{ success: boolean; data?: any; message?: string; nextStep?: 'serviceSelection' | 'products' | 'branches' | null }>;
   clearAuth: () => void;
   clearError: () => void;
+  setErrorWithAutoClear: (errorMessage: string, timeoutMs?: number) => void;
   setPendingProfileCompletionState: (state: PendingProfileCompletionState) => void;
   fetchUserInformation: (forceRefresh?: boolean) => Promise<void>;
   checkAuthenticationState: () => AuthState;

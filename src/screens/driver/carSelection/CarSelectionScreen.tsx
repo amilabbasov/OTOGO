@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Animated,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
@@ -279,6 +280,16 @@ const CarSelectionScreen = () => {
     closeModal();
   };
 
+  const handleOutsideFormClick = () => {
+    // Only auto-save if form is complete and we're adding a new car (not editing)
+    if (showForm && isFormComplete() && editingIndex === null) {
+      // Add a small delay to prevent accidental saves
+      setTimeout(() => {
+        handleSaveCar();
+      }, 100);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
       <SuccessModal
@@ -287,12 +298,13 @@ const CarSelectionScreen = () => {
         onHide={() => setShowSuccessModal(false)}
         svgSource={allSetSuccessSvg}
       />
-      <View style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+      <TouchableWithoutFeedback onPress={handleOutsideFormClick}>
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <SvgImage source={require('../../../assets/svg/auth/goBack.svg')} width={40} height={40} />
           </TouchableOpacity>
@@ -318,30 +330,35 @@ const CarSelectionScreen = () => {
 
           {/* Show form when adding/editing */}
           {showForm && (
-            <View style={{ marginBottom: 16 }}>
-              <CarForm
-                form={form}
-                setForm={setForm}
-                selectedBrand={selectedBrand}
-                onOpenBrandModal={openBrandModal}
-                onOpenModelModal={openModelModal}
-                onRemove={() => {
-                  if (editingIndex !== null) {
-                    handleRemove(editingIndex);
-                  } else {
-                    resetForm();
-                    setShowForm(false);
-                  }
-                }}
-              />
-              <TouchableOpacity
-                style={[styles.addCarBtn, !isFormComplete() && { opacity: 0.5 }]}
-                onPress={handleSaveCar}
-                disabled={!isFormComplete()}
-              >
-                <Text style={styles.addCarBtnText}>{editingIndex !== null ? 'Save car' : '+ Add car'}</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={{ marginBottom: 16 }}>
+                {editingIndex === null && isFormComplete() && (
+                  <Text style={styles.autoSaveHint}>Click outside to save car</Text>
+                )}
+                <CarForm
+                  form={form}
+                  setForm={setForm}
+                  selectedBrand={selectedBrand}
+                  onOpenBrandModal={openBrandModal}
+                  onOpenModelModal={openModelModal}
+                  onRemove={() => {
+                    if (editingIndex !== null) {
+                      handleRemove(editingIndex);
+                    } else {
+                      resetForm();
+                      setShowForm(false);
+                    }
+                  }}
+                />
+                <TouchableOpacity
+                  style={[styles.addCarBtn, !isFormComplete() && { opacity: 0.5 }]}
+                  onPress={handleSaveCar}
+                  disabled={!isFormComplete()}
+                >
+                  <Text style={styles.addCarBtnText}>{editingIndex !== null ? 'Save car' : '+ Add car'}</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           )}
 
           {/* Show add car button when not showing form and under limit */}
@@ -360,6 +377,7 @@ const CarSelectionScreen = () => {
           showForm={showForm}
         />
       </View>
+      </TouchableWithoutFeedback>
 
       <SelectionModal
         visible={isModalVisible}
@@ -413,6 +431,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#18181B',
     fontWeight: '600',
+  },
+  autoSaveHint: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontStyle: 'italic',
   },
 });
 

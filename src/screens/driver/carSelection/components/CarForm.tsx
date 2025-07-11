@@ -44,9 +44,9 @@ const CarForm: React.FC<CarFormProps> = ({
       />
       <Text style={styles.label}>Car brand</Text>
       <TouchableOpacity style={styles.select} onPress={onOpenBrandModal}>
-        {selectedBrand && (
+        {selectedBrand ? (
           <SvgImage source={require('../../../../assets/svg/personalInfo/car.svg')} width={20} height={20} />
-        )}
+        ) : null}
         <Text style={styles.selectText}>
           {selectedBrand ? selectedBrand.name : 'Select brand'}
         </Text>
@@ -57,9 +57,9 @@ const CarForm: React.FC<CarFormProps> = ({
         disabled={!form.brand}
         onPress={onOpenModelModal}
       >
-        {form.model && (
+        {form.model ? (
           <SvgImage source={require('../../../../assets/svg/personalInfo/car.svg')} width={20} height={20} />
-        )}
+        ) : null}
         <Text style={styles.selectText}>
           {form.model ? form.model : 'Select model'}
         </Text>

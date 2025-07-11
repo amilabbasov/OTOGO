@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabIcon from '../components/navigation/TabIcon';
+import { Routes } from './routes';
 
 import DriverHomeScreen from '../screens/driver/home/UserHomeScreen';
 import DriverProfileScreen from '../screens/driver/profile/DriverProfileScreen';
@@ -35,9 +36,9 @@ const DriverNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="home" component={DriverHomeScreen} />
-      <Tab.Screen name="search" component={DriverServicesScreen} />
-      <Tab.Screen name="profile" component={DriverProfileScreen} />
+      <Tab.Screen name={Routes.driverHome} component={DriverHomeScreen} />
+      <Tab.Screen name={Routes.driverServices} component={DriverServicesScreen} />
+      <Tab.Screen name={Routes.driverProfile} component={DriverProfileScreen} />
     </Tab.Navigator>
   );
 };
