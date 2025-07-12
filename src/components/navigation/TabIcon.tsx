@@ -33,13 +33,9 @@ const ICONS = {
     default: require('../../assets/svg/tabs/home.svg'),
     selected: require('../../assets/svg/tabs/home-selected.svg'),
   },
-  providerbookings: {
+  providersearch: {
     default: require('../../assets/svg/tabs/search.svg'),
     selected: require('../../assets/svg/tabs/search-selected.svg'),
-  },
-  providerearnings: {
-    default: require('../../assets/svg/tabs/profile.svg'),
-    selected: require('../../assets/svg/tabs/profile-selected.svg'),
   },
   providerprofile: {
     default: require('../../assets/svg/tabs/profile.svg'),
@@ -57,8 +53,7 @@ const LABELS: Record<string, string> = {
   driverprofile: 'Profile',
   // Provider routes
   providerhome: 'Home',
-  providerbookings: 'Bookings',
-  providerearnings: 'Earnings',
+  providersearch: 'Search',
   providerprofile: 'Profile',
 };
 

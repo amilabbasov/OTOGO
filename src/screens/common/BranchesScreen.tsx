@@ -3,7 +3,6 @@ import { useRoute } from '@react-navigation/native';
 import type { MainScreenProps } from '../../navigations/types';
 import { Routes } from '../../navigations/routes';
 import useAuthStore from '../../stores/auth/authStore';
-import SoleProviderBranchesScreen from '../provider/sole/branches/SoleProviderBranchesScreen';
 import CorporateProviderBranchesScreen from '../provider/corporate/branches/CorporateProviderBranchesScreen';
 
 const BranchesScreen = () => {

@@ -10,6 +10,7 @@ interface ProviderServicesState {
 
 interface ProviderServicesActions {
   updateServices: (serviceIds: number[], userType: 'individual_provider' | 'company_provider') => Promise<void>;
+  updateTags: (tagIds: number[], userType: 'individual_provider' | 'company_provider') => Promise<void>;
   setSelectedServices: (serviceIds: number[]) => void;
   clearError: () => void;
 }
@@ -41,6 +42,33 @@ const useProviderServicesStore = create<ProviderServicesStore>((set, get) => ({
       return response.data;
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to update services.';
+      set({ 
+        error: errorMessage, 
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+
+  updateTags: async (tagIds: number[], userType: 'individual_provider' | 'company_provider') => {
+    set({ isLoading: true, error: null });
+    try {
+      let response;
+      
+      if (userType === 'individual_provider') {
+        response = await authService.updateIndividualProviderTags(tagIds);
+      } else {
+        response = await authService.updateCompanyProviderTags(tagIds);
+      }
+      
+      set({ 
+        isLoading: false, 
+        error: null 
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to update tags.';
       set({ 
         error: errorMessage, 
         isLoading: false 

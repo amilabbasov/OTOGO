@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../../stores/auth/authStore';
+import { formatDateForDisplay } from '../../../utils/dateUtils';
 
 const UserProfileScreen = () => {
   const { t } = useTranslation();
@@ -45,20 +46,6 @@ const UserProfileScreen = () => {
       await fetchUserInformation(true);
     } catch (error) {
       Alert.alert(t('Error'), t('Failed to refresh profile. Please try again.'));
-    }
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Not provided';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch {
-      return dateString;
     }
   };
 
@@ -109,7 +96,7 @@ const UserProfileScreen = () => {
             
             <View style={styles.infoRow}>
               <Text style={styles.label}>Date of Birth:</Text>
-              <Text style={styles.value}>{formatDate(user.birthday)}</Text>
+              <Text style={styles.value}>{user.birthday ? formatDateForDisplay(user.birthday) : 'Not provided'}</Text>
             </View>
             
             <View style={styles.infoRow}>

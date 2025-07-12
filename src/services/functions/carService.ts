@@ -11,6 +11,16 @@ export type CarBrand = {
   name: string;
 };
 
+export type UserCar = {
+  id: number;
+  name: string;
+  brandId: number;
+  modelId: number;
+  year: number;
+  brand?: CarBrand;
+  model?: CarModel;
+};
+
 const carService = {
   getBrands: async (): Promise<CarBrand[]> => {
     try {
@@ -42,6 +52,15 @@ const carService = {
   postCar: async (car: { name: string; brandId: number; modelId: number; year: number }): Promise<{ id: number; name: string; brandId: number; modelId: number; year: number }> => {
     try {
       const response = await apiClient.post('/api/cars', car);
+      return response.data;
+    } catch (error) {
+      // Handle error explicitly
+      throw error;
+    }
+  },
+  getUserCars: async (): Promise<UserCar[]> => {
+    try {
+      const response = await apiClient.get<UserCar[]>('/api/cars');
       return response.data;
     } catch (error) {
       // Handle error explicitly

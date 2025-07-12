@@ -29,8 +29,18 @@ const authService = {
   // ===== INDIVIDUAL PROVIDER REGISTRATION & VERIFICATION =====
   registerIndividualProvider: (userData: RegisterData) => apiClient.post('/api/individual-providers', userData),
   verifyIndividualProvider: (verificationData: OtpVerificationData) => apiClient.post('/api/individual-providers/verify', verificationData),
-  completeIndividualProviderProfile: (data: { name: string; surname: string; description: string; phone: string; birthday: string; email: string }) =>
-    apiClient.post('/api/individual-providers/complete-registration-individual', data),
+  completeIndividualProviderProfile: async (data: { name: string; surname: string; dayTimes: Array<{ dayOfWeek: string; startTime: string; endTime: string; isOpen: number }>; phone: string; address: string; birthday: string }) => {
+    console.log('authService.completeIndividualProviderProfile: Making API call with data:', data);
+    console.log('authService.completeIndividualProviderProfile: API endpoint: /api/individual-providers/complete-registration-individual');
+    try {
+      const response = await apiClient.post('/api/individual-providers/complete-registration-individual', data);
+      console.log('authService.completeIndividualProviderProfile: Success response:', response.data);
+      return response;
+    } catch (error: any) {
+      console.log('authService.completeIndividualProviderProfile: Error response:', error.response?.data);
+      throw error;
+    }
+  },
   resendIndividualProviderOtp: (email: string) => apiClient.post('/api/individual-providers/auth/resend-code', { email }),
 
   // ===== PASSWORD MANAGEMENT =====
@@ -44,6 +54,7 @@ const authService = {
 
   // ===== SERVICES MANAGEMENT =====
   getServices: () => apiClient.get('/api/services'),
+  getServiceTags: (serviceId: number) => apiClient.get(`/api/tags/service/${serviceId}`),
 
   // ===== USER PROFILE MANAGEMENT =====
   getDriverInformation: () => apiClient.get('/api/drivers/information'),
@@ -53,6 +64,10 @@ const authService = {
   // ===== PROVIDER SERVICES MANAGEMENT =====
   updateIndividualProviderServices: (serviceIds: number[]) => apiClient.post('/api/individual-providers/services', { serviceIds }),
   updateCompanyProviderServices: (serviceIds: number[]) => apiClient.post('/api/company-providers/services', { serviceIds }),
+  
+  // ===== PROVIDER TAGS MANAGEMENT =====
+  updateIndividualProviderTags: (tagIds: number[]) => apiClient.post('/api/individual-providers/tags', { tagIds }),
+  updateCompanyProviderTags: (tagIds: number[]) => apiClient.post('/api/company-providers/tags', { tagIds }),
 };
 
 export default authService;

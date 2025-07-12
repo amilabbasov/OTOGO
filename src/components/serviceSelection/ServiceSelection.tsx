@@ -1,51 +1,134 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../stores/auth/authStore';
 import useProviderServicesStore from '../../stores/provider/providerServicesStore';
+import useServicesStore from '../../stores/services/servicesStore';
+import authService from '../../services/functions/authService';
 import { Routes } from '../../navigations/routes';
 import type { MainScreenProps } from '../../navigations/types';
 
-const MOCK_SERVICES = [
-  'Engine Services',
-  'Car washing',
-  'Evacuator',
-  'Painting',
-  'Yagdeyisme',
-  'Razval',
-  'Remendeyisme',
-  'Radiator servisləri',
-  'Motor servisi',
-  'Self washing',
-];
-
 const ServiceSelection: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainScreenProps<Routes.serviceSelection>['navigation']>();
   const { setPendingProfileCompletionState, userType } = useAuthStore();
-  const { updateServices, isLoading: isUpdatingServices } = useProviderServicesStore();
+  const { updateTags, isLoading: isUpdatingTags } = useProviderServicesStore();
+  const { serviceTags, fetchServiceTags, isLoadingTags } = useServicesStore();
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<string[]>(['Engine Services', 'Car washing', 'Evacuator']);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [userServiceIds, setUserServiceIds] = useState<number[]>([]);
+  const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(true);
 
-  const filteredServices = MOCK_SERVICES.filter(service =>
-    service.toLowerCase().includes(search.toLowerCase())
+  // Fetch user info to get serviceIds
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        setIsLoadingUserInfo(true);
+        let response;
+        
+        if (userType === 'individual_provider') {
+          response = await authService.getIndividualProviderInformation();
+        } else if (userType === 'company_provider') {
+          response = await authService.getCompanyProviderInformation();
+        } else {
+          // For drivers, we don't need service info
+          setIsLoadingUserInfo(false);
+          return;
+        }
+        
+        const userInfo = response.data;
+        setUserServiceIds(userInfo.serviceIds || []);
+      } catch (error: any) {
+        console.error('Failed to fetch user info:', error);
+        Alert.alert(t('Error'), t('Failed to load user information. Please try again.'));
+      } finally {
+        setIsLoadingUserInfo(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, [userType, t]);
+
+  // Fetch tags for user's selected services
+  useEffect(() => {
+    if (userServiceIds.length > 0) {
+      userServiceIds.forEach(serviceId => {
+        fetchServiceTags(serviceId);
+      });
+    }
+  }, [userServiceIds, fetchServiceTags]);
+
+  // Flatten all tags from user's selected services only
+  const allTags = React.useMemo(() => {
+    const tagMap: { [id: number]: any } = {};
+    userServiceIds.forEach(serviceId => {
+      const tagsArr = serviceTags[serviceId] || [];
+      tagsArr.forEach(tag => {
+        tagMap[tag.id] = tag;
+      });
+    });
+    return Object.values(tagMap);
+  }, [serviceTags, userServiceIds]);
+
+  const filteredTags = allTags.filter(tag =>
+    tag.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleToggle = (name: string) => {
-    setSelected(prev =>
-      prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
+  const handleToggle = (tagId: number) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
     );
   };
 
   const handleContinue = async () => {
     try {
-      // For providers, update services via API
+      // For providers, update tags via API
       if (userType && (userType === 'individual_provider' || userType === 'company_provider')) {
-        // Convert service names to IDs (mock implementation)
-        const serviceIds = selected.map((_, index) => index + 1);
-        await updateServices(serviceIds, userType);
+        await updateTags(selectedTags, userType);
       }
       
-      // Clear pending profile completion state - user is now fully authenticated
+      // Set the next step to products for providers
+      if (userType === 'individual_provider' || userType === 'company_provider') {
+        setPendingProfileCompletionState({ 
+          isPending: true, 
+          userType: userType, 
+          email: useAuthStore.getState().user?.email || '', 
+          step: 'products'
+        });
+      } else {
+        // For drivers, clear pending state and go to main app
+        setPendingProfileCompletionState({ 
+          isPending: false, 
+          userType: null, 
+          email: null, 
+          step: null 
+        });
+        
+        // Navigate to the main app based on user type
+        if (userType === 'driver') {
+          navigation.replace(Routes.driverTabs);
+        } else {
+          navigation.replace(Routes.providerTabs);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating tags:', error);
+      Alert.alert('Error', 'Failed to update tags. Please try again.');
+    }
+  };
+
+  const handleSkip = () => {
+    // For providers, set next step to products even when skipping
+    if (userType === 'individual_provider' || userType === 'company_provider') {
+      setPendingProfileCompletionState({ 
+        isPending: true, 
+        userType: userType, 
+        email: useAuthStore.getState().user?.email || '', 
+        step: 'products'
+      });
+    } else {
+      // For drivers, skip also clears pending state and navigates to main app
       setPendingProfileCompletionState({ 
         isPending: false, 
         userType: null, 
@@ -53,87 +136,65 @@ const ServiceSelection: React.FC = () => {
         step: null 
       });
       
-      // Save updated user data to AsyncStorage to persist the completion
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
-        useAuthStore.getState().setUserData({
-          user: currentUser,
-          userType: userType || 'individual_provider',
-          pendingProfileCompletionStatus: false,
-          email: currentUser.email || ''
-        });
-      }
-      
-      // Navigate to the main app based on user type
+      // Skip also navigates to main app
       if (userType === 'driver') {
         navigation.replace(Routes.driverTabs);
       } else {
         navigation.replace(Routes.providerTabs);
       }
-    } catch (error) {
-      console.error('Error updating services:', error);
-      Alert.alert('Error', 'Failed to update services. Please try again.');
     }
   };
 
-  const handleSkip = () => {
-    // Skip also clears pending state and navigates to main app
-    setPendingProfileCompletionState({ 
-      isPending: false, 
-      userType: null, 
-      email: null, 
-      step: null 
-    });
-    
-    // Save updated user data to AsyncStorage to persist the completion
-    const currentUser = useAuthStore.getState().user;
-    if (currentUser) {
-      useAuthStore.getState().setUserData({
-        user: currentUser,
-        userType: userType || 'individual_provider',
-        pendingProfileCompletionStatus: false,
-        email: currentUser.email || ''
-      });
-    }
-    
-    // Skip also navigates to main app
-    if (userType === 'driver') {
-      navigation.replace(Routes.driverTabs);
-    } else {
-      navigation.replace(Routes.providerTabs);
-    }
-  };
+  if (isLoadingUserInfo || isLoadingTags) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#D5FF5F" />
+            <Text style={styles.loadingText}>
+              {isLoadingUserInfo ? t('Loading user information...') : t('Loading tags...')}
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.header}>Services</Text>
+        <Text style={styles.header}>Tags</Text>
         <Text style={styles.subHeader}>you provide</Text>
-        <Text style={styles.desc}>Please select proper service types you provide, you can change later</Text>
+        <Text style={styles.desc}>Please select proper tags for your services, you can change later</Text>
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search services"
+            placeholder="Search tags"
             value={search}
             onChangeText={setSearch}
             placeholderTextColor="#B3B3B3"
           />
         </View>
         <View style={styles.chipContainer}>
-          {filteredServices.map(service => (
+          {filteredTags.map(tag => (
             <TouchableOpacity
-              key={service}
-              style={selected.includes(service) ? styles.chipSelected : styles.chip}
-              onPress={() => handleToggle(service)}
+              key={tag.id}
+              style={selectedTags.includes(tag.id) ? styles.chipSelected : styles.chip}
+              onPress={() => handleToggle(tag.id)}
               activeOpacity={0.7}
             >
-              <Text style={selected.includes(service) ? styles.chipTextSelected : styles.chipText}>
-                {service}
+              <Text style={selectedTags.includes(tag.id) ? styles.chipTextSelected : styles.chipText}>
+                {tag.name}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
+        
+        {filteredTags.length === 0 && !isLoadingUserInfo && (
+          <Text style={styles.noTagsText}>No tags available for your selected services</Text>
+        )}
+        
         <TouchableOpacity style={styles.moreBtn}>
           <Text style={styles.moreText}>More &gt;&gt;</Text>
         </TouchableOpacity>
@@ -143,12 +204,12 @@ const ServiceSelection: React.FC = () => {
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.continueBtn, (selected.length === 0 || isUpdatingServices) && { opacity: 0.5 }]}
-          disabled={selected.length === 0 || isUpdatingServices}
+          style={[styles.continueBtn, (selectedTags.length === 0 || isUpdatingTags) && { opacity: 0.5 }]}
+          disabled={selectedTags.length === 0 || isUpdatingTags}
           onPress={handleContinue}
         >
           <Text style={styles.continueText}>
-            {isUpdatingServices ? 'Updating...' : 'Continue'}
+            {isUpdatingTags ? 'Updating...' : 'Continue'}
           </Text>
           <Text style={styles.continueArrow}>→</Text>
         </TouchableOpacity>
@@ -239,6 +300,23 @@ const styles = StyleSheet.create({
   },
   continueText: { color: '#D5FF5F', fontSize: 18, fontWeight: '600' },
   continueArrow: { color: '#D5FF5F', fontSize: 22, marginLeft: 8 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  loadingText: {
+    marginTop: 20,
+    color: '#888',
+    fontSize: 16,
+  },
+  noTagsText: {
+    color: '#888',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  },
 });
 
 export default ServiceSelection; 

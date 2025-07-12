@@ -50,7 +50,7 @@ const Router = () => {
 
   let contentComponent;
 
-  if (isAuthenticated || pendingProfileCompletion.isPending) {
+  if (isAuthenticated) {
     contentComponent = MainRouter;
   } else if (isPasswordResetFlowActive) {
     contentComponent = AuthRouter;

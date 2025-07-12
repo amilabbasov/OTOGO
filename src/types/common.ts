@@ -42,6 +42,15 @@ export interface Service {
   serviceName: string;
   createdAt: string;
   updatedAt: string;
+  tags?: Tag[];
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  serviceId: number;
 }
 
 // Authentication state propertiləri
@@ -74,7 +83,7 @@ export interface AuthActions {
   forgotPassword: (email: string) => Promise<any>;
   resendPasswordResetOtp: (email: string) => Promise<any>;
   updatePassword: (data: { email: string; token: string; newPassword: string; repeatPassword: string }) => Promise<any>;
-  completeProfile: (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, taxId?: string) => Promise<{ success: boolean; data?: any; message?: string; nextStep?: 'serviceSelection' | 'products' | 'branches' | null }>;
+  completeProfile: (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, address?: string, workHours?: any) => Promise<{ success: boolean; data?: any; message?: string; nextStep?: 'serviceSelection' | 'products' | 'branches' | null }>;
   clearAuth: () => void;
   clearError: () => void;
   setErrorWithAutoClear: (errorMessage: string, timeoutMs?: number) => void;

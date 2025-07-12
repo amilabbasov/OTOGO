@@ -14,15 +14,14 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import useAuthStore from '../../../stores/auth/authStore';
-import { Routes } from '../../../navigations/routes';
 import CarForm from './components/CarForm';
 import CarSummary from './components/CarSummary';
 import SelectionModal from './components/SelectionModal';
 import BottomButtons from './components/BottomButtons';
-import carService, { CarModel, CarBrand } from '../../../services/functions/carService';
+import carService, { CarModel, CarBrand, UserCar } from '../../../services/functions/carService';
 import SuccessModal from '../../../components/success/SuccessModal';
+
 const allSetSuccessSvg = require('../../../assets/svg/success/allSet-success.svg');
-import { CommonActions } from '@react-navigation/native';
 
 const MAX_CARS = 2;
 
@@ -30,16 +29,25 @@ const CarSelectionScreen = () => {
   const navigation = useNavigation();
   const { pendingProfileCompletion, setPendingProfileCompletionState } = useAuthStore();
   const firstName = pendingProfileCompletion.firstName || 'Driver';
-  const [cars, setCars] = useState<any[]>([]);
+  // Form data structure for adding/editing cars
+  interface CarFormData {
+    name: string;
+    year: string;
+    brand: number;
+    model: string;
+  }
+
+  const [cars, setCars] = useState<UserCar[]>([]);
+  const [carsLoading, setCarsLoading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'brand' | 'model'>('brand');
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CarFormData>({
     name: '',
     year: '',
-    brand: 0, // use id instead of string
+    brand: 0,
     model: '',
   });
   const [brandModels, setBrandModels] = useState<CarModel[]>([]);
@@ -65,14 +73,17 @@ const CarSelectionScreen = () => {
       })
       .finally(() => setBrandsLoading(false));
 
-    // Remove global models fetch
-    // setModelsLoading(true);
-    // carService.getModels()
-    //   .then(setModels)
-    //   .catch((err) => {
-    //     setModelsError('Failed to load car models');
-    //   })
-    //   .finally(() => setModelsLoading(false));
+    // Fetch user's existing cars
+    setCarsLoading(true);
+    carService.getUserCars()
+      .then((userCars) => {
+        setCars(userCars);
+      })
+      .catch((err) => {
+        console.log('Failed to load user cars:', err);
+        // Don't show error for this, just log it
+      })
+      .finally(() => setCarsLoading(false));
   }, []);
 
   // Fetch models when brand changes
@@ -104,6 +115,21 @@ const CarSelectionScreen = () => {
     model.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Helper functions to convert between UserCar and CarFormData
+  const userCarToFormData = (car: UserCar): CarFormData => ({
+    name: car.name,
+    year: car.year.toString(),
+    brand: car.brandId,
+    model: car.model?.name || '',
+  });
+
+  const formDataToUserCar = (formData: CarFormData): Omit<UserCar, 'id'> => ({
+    name: formData.name,
+    brandId: formData.brand,
+    modelId: 0, // Will be set when saving
+    year: parseInt(formData.year),
+  });
+
   const resetForm = () => setForm({ name: '', year: '', brand: 0, model: '' });
 
   const isFormComplete = () => {
@@ -124,11 +150,25 @@ const CarSelectionScreen = () => {
     
     if (editingIndex !== null) {
       const updated = [...cars];
-      updated[editingIndex] = { ...form };
+      // For editing, we need to preserve the existing car's ID and other properties
+      updated[editingIndex] = {
+        ...updated[editingIndex],
+        name: form.name,
+        year: parseInt(form.year),
+        brandId: form.brand,
+      };
       setCars(updated);
       setEditingIndex(null);
     } else {
-      setCars([...cars, { ...form }]);
+      // For new cars, we'll add them to the local state but they'll be saved to API later
+      const newCar: UserCar = {
+        id: Date.now(), // Temporary ID for local state
+        name: form.name,
+        brandId: form.brand,
+        modelId: 0, // Will be set when saving to API
+        year: parseInt(form.year),
+      };
+      setCars([...cars, newCar]);
     }
     
     resetForm();
@@ -136,7 +176,13 @@ const CarSelectionScreen = () => {
   };
 
   const handleEdit = (idx: number) => {
-    setForm(cars[idx]);
+    const car = cars[idx];
+    setForm({
+      name: car.name,
+      year: car.year.toString(),
+      brand: car.brandId,
+      model: car.model?.name || '',
+    });
     setEditingIndex(idx);
     setShowForm(true);
   };
@@ -175,15 +221,15 @@ const CarSelectionScreen = () => {
     }
     try {
       for (const car of cars) {
-        const models: CarModel[] = await carService.getModelsByBrand(car.brand);
-        const modelObj = models.find(m => m.name === car.model);
+        const models: CarModel[] = await carService.getModelsByBrand(car.brandId);
+        const modelObj = models.find(m => m.name === car.model?.name);
         if (!modelObj) {
           Alert.alert('Error', `Model '${car.model}' not found for selected brand.`);
           return;
         }
         await carService.postCar({
           name: car.name,
-          brandId: car.brand,
+          brandId: car.brandId,
           modelId: modelObj.id,
           year: Number(car.year),
         });
@@ -205,9 +251,10 @@ const CarSelectionScreen = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: Routes.driverHome as never }],
+      setPendingProfileCompletionState({
+        ...pendingProfileCompletion,
+        step: 'personalInfo',
+        firstName: pendingProfileCompletion.firstName,
       });
     }
   };
@@ -315,11 +362,16 @@ const CarSelectionScreen = () => {
           {cars.length > 0 && (
             <View style={{ marginBottom: 16 }}>
               {cars.map((car, index) => {
-                const carBrand = brands.find(b => b.id === car.brand);
+                const carBrand = brands.find(b => b.id === car.brandId);
                 return (
                   <CarSummary
-                    key={index}
-                    form={car}
+                    key={car.id || index}
+                    form={{
+                      name: car.name,
+                      year: car.year.toString(),
+                      brand: car.brandId,
+                      model: car.model?.name || '',
+                    }}
                     selectedBrand={carBrand}
                     onEdit={() => handleEdit(index)}
                   />

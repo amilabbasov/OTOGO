@@ -5,7 +5,6 @@ import TabIcon from '../components/navigation/TabIcon';
 import SoleProviderHomeScreen from '../screens/provider/sole/home/SoleProviderHomeScreen';
 import SoleProviderProfileScreen from '../screens/provider/sole/profile/SoleProviderProfileScreen';
 import SoleProviderBookingsScreen from '../screens/provider/sole/bookings/SoleProviderBookingsScreen';
-import SoleProviderEarningsScreen from '../screens/provider/sole/earnings/SoleProviderEarningsScreen';
 import { Routes } from './routes';
 
 const Tab = createBottomTabNavigator();
@@ -21,14 +20,11 @@ const SoleProviderNavigator = () => {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: '#181818',
-          borderTopWidth: 0,
           borderRadius: 40,
           marginHorizontal: 16,
-          marginBottom: 16,
+          marginBottom: 35,
           height: 80,
           position: 'absolute',
-          left: 0,
-          right: 0,
           shadowColor: '#000',
           shadowOpacity: 0.1,
           shadowRadius: 10,
@@ -42,14 +38,9 @@ const SoleProviderNavigator = () => {
         options={{ tabBarLabel: 'Home' }}
       />
       <Tab.Screen 
-        name={Routes.providerBookings} 
+        name={Routes.providerSearch} 
         component={SoleProviderBookingsScreen}
-        options={{ tabBarLabel: 'Bookings' }}
-      />
-      <Tab.Screen 
-        name={Routes.providerEarnings} 
-        component={SoleProviderEarningsScreen}
-        options={{ tabBarLabel: 'Earnings' }}
+        options={{ tabBarLabel: 'Search' }}
       />
       <Tab.Screen 
         name={Routes.providerProfile} 

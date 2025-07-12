@@ -15,7 +15,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import type { MainScreenProps } from '../../../../navigations/types';
 import { Routes } from '../../../../navigations/routes';
 import useAuthStore from '../../../../stores/auth/authStore';
@@ -24,16 +24,12 @@ import { colors } from '../../../../theme/color';
 import DateOfBirthInput from '../../../../components/registration/DateOfBirthInput';
 import WorkHoursInput, { WorkHours } from '../../../../components/registration/WorkHoursInput';
 
-function toIsoDate(date: string) {
-  const [day, month, year] = date.split('/');
-  return `${year}-${month}-${day}`;
-}
+import { toIsoDate } from '../../../../utils/dateUtils';
 
 const SoleProviderPersonalInfoScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation<MainScreenProps<Routes.personalInfo>["navigation"]>();
   const route = useRoute<MainScreenProps<Routes.personalInfo>["route"]>();
-  const { completeProfile, isLoading, pendingProfileCompletion } = useAuthStore();
+  const { completeProfile, isLoading, pendingProfileCompletion, setPendingProfileCompletionState } = useAuthStore();
 
   const email = route.params?.email || pendingProfileCompletion?.email || '';
   const userType = route.params?.userType || pendingProfileCompletion?.userType || 'individual_provider';
@@ -92,12 +88,21 @@ const SoleProviderPersonalInfoScreen = () => {
     checkAuthenticationState();
 
     const isoDate = toIsoDate(dateOfBirth);
-    // Create description from address and work hours
-    const description = `${address.trim()}\nWork Hours: ${JSON.stringify(workHours)}`;
-    const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType, isoDate, description, undefined);
+    if (!isoDate) {
+      Alert.alert(t('Error'), t('Please enter a valid date of birth in DD/MM/YYYY format'));
+      return;
+    }
+    const result = await completeProfile(email, firstName.trim(), lastName.trim(), phone.trim(), userType, isoDate, undefined, address.trim(), workHours);
     
     if (result.success) {
-      // Navigation will be handled automatically by MainRouter based on state change
+      // Set the next step to serviceSelection, MainRouter will handle navigation
+      setPendingProfileCompletionState({
+        ...pendingProfileCompletion,
+        isPending: true,
+        userType: 'individual_provider',
+        email,
+        step: 'serviceSelection',
+      });
     } else {
       Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
     }

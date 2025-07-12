@@ -22,7 +22,7 @@ const CorporateProviderProductsScreen = () => {
   const navigation = useNavigation<MainScreenProps<Routes.products>['navigation']>();
   const route = useRoute<MainScreenProps<Routes.products>['route']>();
   const { services, isLoading, error, fetchServices } = useServicesStore();
-  const { updateServices, isLoading: isUpdating } = useProviderServicesStore();
+  const { updateTags, isLoading: isUpdating } = useProviderServicesStore();
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
 
   useEffect(() => {
@@ -41,19 +41,19 @@ const CorporateProviderProductsScreen = () => {
 
   const handleContinue = async () => {
     if (selectedTags.length === 0) {
-      Alert.alert(t('Error'), t('Please select at least one service'));
+      Alert.alert(t('Error'), t('Please select at least one tag'));
       return;
     }
 
     try {
-      // Update services via API
-      await updateServices(selectedTags, 'company_provider');
+      // Update tags via API
+      await updateTags(selectedTags, 'company_provider');
       
       // Navigate to branches screen
       navigation.navigate(Routes.branches, { userType: 'company_provider' });
     } catch (error) {
-      console.error('Error updating services:', error);
-      Alert.alert(t('Error'), t('Failed to update services. Please try again.'));
+      console.error('Error updating tags:', error);
+      Alert.alert(t('Error'), t('Failed to update tags. Please try again.'));
     }
   };
 

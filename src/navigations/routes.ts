@@ -30,9 +30,7 @@ export enum Routes {
     
     // Provider routes
     providerHome = 'providerHome',
-    providerServices = 'providerServices',
-    providerBookings = 'providerBookings',
-    providerEarnings = 'providerEarnings',
+    providerSearch = 'providerSearch',
     providerProfile = 'providerProfile',
     
     // Tab navigators

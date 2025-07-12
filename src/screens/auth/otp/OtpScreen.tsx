@@ -119,14 +119,6 @@ const OtpScreen = () => {
   };
 
   const handleResend = async () => {
-    console.log("handleResend: Starting resend process.");
-    console.log("handleResend: Current email:", email); // ƏLAVƏ EDİN
-    console.log("handleResend: Current userType:", userType); // ƏLAVƏ EDİN
-    console.log("handleResend: isResendDisabled:", isResendDisabled); // ƏLAVƏ EDİN
-    console.log("handleResend: isLoading (from store):", isLoading); // ƏLAVƏ EDİN
-    console.log("handleResend: otpResendState.isLockedOut:", otpResendState.isLockedOut); // ƏLAVƏ EDİN
-    console.log("handleResend: lockoutTimer:", lockoutTimer); // ƏLAVƏ EDİN
-
     if (!isResendDisabled) {
       setOtpError('');
       try {
@@ -174,8 +166,19 @@ const OtpScreen = () => {
 
     try {
       if (userType) {
-        await verifyOtp({ email, token: otpCode, userType: userType as UserType });
+        const verificationData = { email, token: otpCode, userType: userType as UserType };
+        
         setShowSuccess(true);
+        
+        setTimeout(async () => {
+          try {
+            await verifyOtp(verificationData);
+          } catch (err: any) {
+            setShowSuccess(false);
+            const displayError = authStoreError || t('OTP code is wrong. Please try again.');
+            setOtpError(displayError);
+          }
+        }, 500);
       } else {
         setOtpError(t('An error occurred. Please try again. Missing user type.'));
       }
@@ -321,7 +324,8 @@ const OtpScreen = () => {
             svgSource={require('../../../assets/svg/success/verification-success.svg')}
             onHide={() => {
               setShowSuccess(false);
-              navigation.reset({ index: 0, routes: [{ name: Routes.driverTabs as never }] });
+              // Let the Router handle navigation based on auth state
+              // The Router will automatically switch to MainRouter when isAuthenticated becomes true
             }}
           />
         </View>

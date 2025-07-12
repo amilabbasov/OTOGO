@@ -18,20 +18,31 @@ import useAuthStore from '../../../stores/auth/authStore';
 import { colors } from '../../../theme/color';
 import { SvgImage } from '../../../components/svgImage/SvgImage';
 import DateOfBirthInput from '../../../components/registration/DateOfBirthInput';
+import { toIsoDate } from '../../../utils/dateUtils';
 
 const DriverPersonalInfoScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<MainScreenProps<Routes.personalInfo>['navigation']>();
   const route = useRoute<MainScreenProps<Routes.personalInfo>['route']>();
-  const { completeProfile, isLoading, pendingProfileCompletion, setPendingProfileCompletionState } = useAuthStore();
+  const { completeProfile, isLoading, pendingProfileCompletion, setPendingProfileCompletionState, user } = useAuthStore();
 
   const email = route.params?.email || pendingProfileCompletion?.email || '';
   const userType = route.params?.userType || pendingProfileCompletion?.userType || 'driver';
   
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [firstName, setFirstName] = useState(pendingProfileCompletion?.firstName || user?.name || '');
+  const [lastName, setLastName] = useState(user?.surname || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [dateOfBirth, setDateOfBirth] = useState(user?.birthday ? new Date(user.birthday).toLocaleDateString('en-GB') : '');
+
+  // Update form fields when user data changes
+  React.useEffect(() => {
+    if (user) {
+      setFirstName(pendingProfileCompletion?.firstName || user.name || '');
+      setLastName(user.surname || '');
+      setPhone(user.phone || '');
+      setDateOfBirth(user.birthday ? new Date(user.birthday).toLocaleDateString('en-GB') : '');
+    }
+  }, [user, pendingProfileCompletion?.firstName]);
 
   const validateForm = () => {
     if (!firstName.trim()) {
@@ -89,21 +100,6 @@ const DriverPersonalInfoScreen = () => {
     return true;
   };
 
-  function toIsoDate(date: string) {
-    if (!date || date.length !== 10) {
-      return null;
-    }
-    const [day, month, year] = date.split('/');
-    if (!day || !month || !year) {
-      return null;
-    }
-    // Ensure proper formatting with leading zeros
-    const formattedDay = day.padStart(2, '0');
-    const formattedMonth = month.padStart(2, '0');
-    const formattedYear = year.padStart(4, '0');
-    return `${formattedYear}-${formattedMonth}-${formattedDay}`;
-  }
-
   const handleContinue = async () => {
     if (!validateForm()) return;
 
@@ -114,6 +110,27 @@ const DriverPersonalInfoScreen = () => {
     }
 
     try {
+      const authState = useAuthStore.getState();
+      console.log('Auth state before completeProfile:', {
+        isAuthenticated: authState.isAuthenticated,
+        token: authState.token ? 'Exists' : 'Missing',
+        userType: authState.userType,
+        pendingProfileCompletion: authState.pendingProfileCompletion,
+      });
+
+      // Check if user already has the required information
+      const hasExistingInfo = user && user.name && user.surname && user.phone && user.birthday;
+      
+      if (hasExistingInfo) {
+        // User already has complete profile, just advance to next step
+        console.log('DriverPersonalInfoScreen: User already has complete profile, advancing to next step');
+        setPendingProfileCompletionState({
+          ...pendingProfileCompletion,
+          step: 'serviceSelection',
+        });
+        return;
+      }
+
       const result = await completeProfile(
         email, 
         firstName.trim(), 
@@ -123,19 +140,14 @@ const DriverPersonalInfoScreen = () => {
         isoDate,
       );
       
+      console.log('DriverPersonalInfoScreen: completeProfile result:', result);
+      
       if (result.success) {
-        if (userType === 'driver') {
-          // Set the next step to serviceSelection, MainRouter will handle navigation
-          setPendingProfileCompletionState({
-            ...pendingProfileCompletion,
-            isPending: true,
-            userType: 'driver',
-            email,
-            step: 'serviceSelection',
-            firstName: firstName.trim(),
-          });
-        }
+        console.log('DriverPersonalInfoScreen: Profile completion successful');
+        // The completeProfile function already sets the pendingProfileCompletion state
+        // No need to call setPendingProfileCompletionState again
       } else {
+        console.log('DriverPersonalInfoScreen: Profile completion failed:', result.message);
         Alert.alert(t('Error'), result.message || t('Failed to complete profile'));
       }
     } catch (error: any) {

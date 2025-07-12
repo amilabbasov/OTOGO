@@ -41,6 +41,8 @@ const useAuthStore = create<AuthStore>()(
 
       setToken: async (token: string) => {
         try {
+          console.log('setToken: Called with token:', token ? 'Exists' : 'Missing');
+          console.log('setToken: Token value:', token);
           if (!token || token.trim() === '') {
             await get().removeToken();
             return;
@@ -48,6 +50,7 @@ const useAuthStore = create<AuthStore>()(
           await AsyncStorage.setItem('userToken', token);
           set({ token, isAuthenticated: true });
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          console.log('setToken: Token saved and API client configured');
         } catch (e: any) {
           console.error('setToken: Tokeni saxlamaq mümkün olmadı:', e.message);
         }
@@ -55,10 +58,13 @@ const useAuthStore = create<AuthStore>()(
 
       ensureApiClientAuth: () => {
         const { token } = get();
+        console.log('ensureApiClientAuth: Token exists:', !!token);
         if (token) {
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          console.log('ensureApiClientAuth: Authorization header set');
         } else {
           delete apiClient.defaults.headers.common['Authorization'];
+          console.log('ensureApiClientAuth: Authorization header removed');
         }
       },
 
@@ -314,6 +320,8 @@ const useAuthStore = create<AuthStore>()(
         set({ isLoading: true });
         try {
           const storedToken = await AsyncStorage.getItem('userToken');
+          console.log('initializeAuth: Stored token from AsyncStorage:', storedToken ? 'Exists' : 'Missing');
+          console.log('initializeAuth: Token value:', storedToken);
           const storedUserDataStr = await AsyncStorage.getItem('userData');
           const storedOtpResendState = await get().loadOtpResendState();
 
@@ -462,7 +470,6 @@ const useAuthStore = create<AuthStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          console.log('resendOtp: Attempting to resend OTP for:', { email, userType }); // Debug log
           let response;
           switch (userType) {
             case 'driver':
@@ -477,15 +484,12 @@ const useAuthStore = create<AuthStore>()(
             default:
               throw new Error('resendOtp: Yanlış istifadəçi növü seçilib, OTP yenidən göndərilə bilmədi.');
           }
-          console.log('resendOtp: API Response SUCCEEDED:', response.data); // Debug log
 
           get().incrementOtpResendAttempts();
 
           set({ isLoading: false, error: null });
           return response.data;
         } catch (error: any) {
-          console.error('resendOtp: API Response FAILED:', error.response?.data || error.message); // Debug log
-
           let errorMessage = 'OTP-ni yenidən göndərmək mümkün olmadı.';
 
           if (error.response?.status === 403) {
@@ -614,13 +618,6 @@ const useAuthStore = create<AuthStore>()(
               throw new Error('Şifrə sıfırlama tokeni cavabda tapılmadı.');
             }
 
-            console.log("verifyOtp (isPasswordReset): Setting state", {
-              isOtpVerifiedForPasswordReset: true,
-              isPasswordResetFlowActive: true,
-              passwordResetToken: actualPasswordResetToken,
-              currentEmail: email
-            });
-
             set({
               isLoading: false,
               error: null,
@@ -707,11 +704,21 @@ const useAuthStore = create<AuthStore>()(
         }
       },
 
-      completeProfile: async (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string) => {
+      completeProfile: async (email: string, firstName: string, lastName: string, phone: string, userType: UserType, dateOfBirth?: string, businessName?: string, address?: string, workHours?: any) => {
         set({ isLoading: true, error: null });
         get().ensureApiClientAuth();
 
+        const currentState = get();
+        console.log('completeProfile: Current auth state:', {
+          isAuthenticated: currentState.isAuthenticated,
+          token: currentState.token ? 'Exists' : 'Missing',
+          userType: currentState.userType,
+          pendingProfileCompletion: currentState.pendingProfileCompletion,
+        });
+
         const validation = get().validateProfileCompletionState();
+        console.log('completeProfile: Validation result:', validation);
+        
         if (!validation.isValid) {
           const errorMessage = `Profil tamamlama doğrulama uğursuz oldu: ${validation.errors.join(', ')}`;
           set({ error: errorMessage, isLoading: false });
@@ -719,24 +726,58 @@ const useAuthStore = create<AuthStore>()(
         }
 
         try {
+          console.log('completeProfile: Starting API call for userType:', userType);
           let response;
           switch (userType) {
             case 'driver':
+              console.log('completeProfile: Calling completeDriverProfile with data:', {
+                name: firstName, surname: lastName,
+                birthday: dateOfBirth || new Date().toISOString().split('T')[0],
+                phone: phone || '',
+                email: email,
+              });
               response = await authService.completeDriverProfile({
                 name: firstName, surname: lastName,
                 birthday: dateOfBirth || new Date().toISOString().split('T')[0],
                 phone: phone || '',
                 email: email,
               });
+              console.log('completeProfile: API call successful, response:', response.data);
               break;
             case 'individual_provider':
-              response = await authService.completeIndividualProviderProfile({
-                name: firstName, surname: lastName,
-                description: businessName || '',
+              // Transform work hours to the expected API format
+              const dayTimes = workHours ? Object.entries(workHours).map(([dayKey, dayData]: [string, any]) => {
+                const dayMapping: { [key: string]: string } = {
+                  'M': 'MONDAY',
+                  'T': 'TUESDAY', 
+                  'W': 'WEDNESDAY',
+                  'T2': 'THURSDAY',
+                  'F': 'FRIDAY',
+                  'S': 'SATURDAY',
+                  'S2': 'SUNDAY'
+                };
+                return {
+                  dayOfWeek: dayMapping[dayKey] || 'MONDAY',
+                  startTime: dayData.open || '09:00',
+                  endTime: dayData.close || '18:00',
+                  isOpen: dayData.enabled ? 1 : 0
+                };
+              }) : [];
+              
+              const apiData = {
+                name: firstName,
+                surname: lastName,
+                dayTimes,
                 phone,
+                address: address || '',
                 birthday: dateOfBirth || new Date().toISOString().split('T')[0],
-                email: email,
-              });
+              };
+              
+              console.log('completeProfile: Birthday field value:', apiData.birthday);
+              console.log('completeProfile: Birthday field type:', typeof apiData.birthday);
+              console.log('completeProfile: Individual provider data being sent:', apiData);
+              
+              response = await authService.completeIndividualProviderProfile(apiData);
               break;
             case 'company_provider':
               response = await authService.completeCompanyProviderProfile({
@@ -751,7 +792,7 @@ const useAuthStore = create<AuthStore>()(
           }
 
           const apiUserData = response.data?.user || response.data;
-
+          
           const hasRequiredPersonalInfo = userType === 'company_provider'
             ? (apiUserData && apiUserData.companyName && apiUserData.phone)
             : (apiUserData && apiUserData.name && apiUserData.surname && apiUserData.phone && apiUserData.birthday);
@@ -760,7 +801,7 @@ const useAuthStore = create<AuthStore>()(
           if (userType === 'driver' && hasRequiredPersonalInfo) {
             nextStep = 'serviceSelection';
           } else if ((userType === 'individual_provider' || userType === 'company_provider') && hasRequiredPersonalInfo) {
-            nextStep = 'products';
+            nextStep = 'serviceSelection'; // Changed from 'products' to 'serviceSelection'
           }
 
           await get().setUserData({
@@ -781,7 +822,15 @@ const useAuthStore = create<AuthStore>()(
             },
           });
 
-          await get().fetchUserInformation(true);
+          console.log('completeProfile: Updated pendingProfileCompletion state:', {
+            isPending: nextStep !== null,
+            userType: nextStep !== null ? userType : null,
+            email: nextStep !== null ? email : null,
+            step: nextStep,
+          });
+
+          // Don't call fetchUserInformation here as it would override the pending state
+          // The user data is already updated from the API response
 
           return { success: true, data: response.data, nextStep };
         } catch (error: any) {
@@ -801,6 +850,13 @@ const useAuthStore = create<AuthStore>()(
 
       checkAuthenticationState: () => {
         const state = get();
+        console.log('checkAuthenticationState: Current state:', {
+          isAuthenticated: state.isAuthenticated,
+          token: state.token ? 'Exists' : 'Missing',
+          tokenValue: state.token,
+          userType: state.userType,
+          pendingProfileCompletion: state.pendingProfileCompletion,
+        });
         return state;
       },
 
