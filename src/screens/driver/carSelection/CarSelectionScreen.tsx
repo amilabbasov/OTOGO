@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  Platform,
   Alert,
   ScrollView,
   Animated,
